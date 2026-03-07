@@ -63,7 +63,7 @@ const AIChatbot = () => {
               <div className="flex items-center gap-2">
                 <Bot className="h-5 w-5 text-primary" />
                 <span className="font-display font-semibold text-sm text-foreground">FitLens AI</span>
-                <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
               </div>
               <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-4 w-4" />

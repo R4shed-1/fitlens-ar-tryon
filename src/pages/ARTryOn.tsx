@@ -52,7 +52,7 @@ const ARTryOn = () => {
                     ))}
                     {/* Status */}
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-medium flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                       AR Active — {selected.name}
                     </div>
                   </div>
