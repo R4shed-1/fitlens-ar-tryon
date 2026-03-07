@@ -4,6 +4,10 @@ import productImg3 from "@/assets/product-glasses-3.png";
 import productImg4 from "@/assets/product-glasses-4.png";
 import productImg5 from "@/assets/product-glasses-5.png";
 import productImg6 from "@/assets/product-glasses-6.png";
+import clothingImg1 from "@/assets/product-clothing-1.png";
+import clothingImg2 from "@/assets/product-clothing-2.png";
+import clothingImg3 from "@/assets/product-clothing-3.png";
+import clothingImg4 from "@/assets/product-clothing-4.png";
 
 export interface Product {
   id: string;
@@ -93,5 +97,55 @@ export const products: Product[] = [
     reviews: 201,
     arEnabled: true,
     tags: ["Lightweight", "AR Ready"],
+  },
+  {
+    id: "7",
+    name: "Linen Tailored Blazer",
+    price: 459,
+    originalPrice: 599,
+    image: clothingImg1,
+    category: "Clothing",
+    description: "A beautifully tailored beige linen blazer with a relaxed silhouette. Perfect for smart-casual occasions with premium horn buttons.",
+    rating: 4.7,
+    reviews: 142,
+    arEnabled: true,
+    tags: ["New Arrival", "AR Ready"],
+  },
+  {
+    id: "8",
+    name: "Essential Cotton Tee",
+    price: 129,
+    image: clothingImg2,
+    category: "Clothing",
+    description: "Luxuriously soft 100% organic cotton t-shirt in crisp white. Relaxed fit with a refined crew neckline for everyday elegance.",
+    rating: 4.6,
+    reviews: 387,
+    arEnabled: true,
+    tags: ["Essentials", "AR Ready"],
+  },
+  {
+    id: "9",
+    name: "Terracotta Maxi Dress",
+    price: 549,
+    originalPrice: 699,
+    image: clothingImg3,
+    category: "Clothing",
+    description: "A flowing chiffon maxi dress in a warm terracotta hue. Features a flattering ruched waist and delicate spaghetti straps.",
+    rating: 4.9,
+    reviews: 205,
+    arEnabled: true,
+    tags: ["Premium", "AR Ready"],
+  },
+  {
+    id: "10",
+    name: "Slim-Fit Navy Chinos",
+    price: 289,
+    image: clothingImg4,
+    category: "Clothing",
+    description: "Tailored slim-fit chinos in deep navy. Crafted from stretch cotton twill for comfort and a polished look all day long.",
+    rating: 4.7,
+    reviews: 176,
+    arEnabled: true,
+    tags: ["Bestseller", "AR Ready"],
   },
 ];

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
 import { products } from "@/lib/products";
 
-const categories = ["All", "Sunglasses", "Eyeglasses", "Sport"];
+const categories = ["All", "Sunglasses", "Eyeglasses", "Sport", "Clothing"];
 
 const Products = () => {
   const [active, setActive] = useState("All");
