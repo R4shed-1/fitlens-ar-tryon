@@ -6,7 +6,7 @@ import { products } from "@/lib/products";
 
 const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState<"card" | "apple" | "google">("card");
-  const cartItems = [products[0], products[2]]; // demo cart
+  const cartItems = [products[0], products[2]];
   const subtotal = cartItems.reduce((s, p) => s + p.price, 0);
   const shipping = 0;
   const total = subtotal + shipping;
@@ -27,13 +27,7 @@ const Checkout = () => {
         </motion.h1>
 
         <div className="grid lg:grid-cols-5 gap-8">
-          {/* Form */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-3 space-y-6"
-          >
-            {/* Shipping */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-3 space-y-6">
             <div className="glass-card rounded-xl p-6 space-y-4">
               <h2 className="font-display font-semibold text-foreground">Shipping Information</h2>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -50,15 +44,14 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Payment */}
             <div className="glass-card rounded-xl p-6 space-y-4">
               <h2 className="font-display font-semibold text-foreground">Payment Method</h2>
               <div className="grid grid-cols-3 gap-3">
-                {[
+                {([
                   { id: "card" as const, label: "Credit Card", icon: CreditCard },
                   { id: "apple" as const, label: "Apple Pay", icon: Smartphone },
                   { id: "google" as const, label: "Google Pay", icon: Smartphone },
-                ].map((m) => (
+                ]).map((m) => (
                   <button
                     key={m.id}
                     onClick={() => setPaymentMethod(m.id)}
@@ -85,7 +78,7 @@ const Checkout = () => {
               )}
             </div>
 
-            <button className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-display font-semibold text-lg hover:bg-primary/90 transition-colors glow-cyan flex items-center justify-center gap-2">
+            <button className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-display font-semibold text-lg hover:bg-primary/90 transition-colors glow-warm flex items-center justify-center gap-2">
               <ShieldCheck className="h-5 w-5" /> Place Order — AED {total}
             </button>
 
@@ -94,12 +87,7 @@ const Checkout = () => {
             </p>
           </motion.div>
 
-          {/* Order summary */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-2"
-          >
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2">
             <div className="glass-card rounded-xl p-6 space-y-4 sticky top-24">
               <h2 className="font-display font-semibold text-foreground">Order Summary</h2>
               <div className="space-y-3">
@@ -118,21 +106,17 @@ const Checkout = () => {
               </div>
               <div className="border-t border-border pt-3 space-y-2 text-sm">
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal</span>
-                  <span>AED {subtotal}</span>
+                  <span>Subtotal</span><span>AED {subtotal}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Shipping</span>
-                  <span className="text-primary">Free</span>
+                  <span>Shipping</span><span className="text-primary">Free</span>
                 </div>
                 <div className="flex justify-between text-foreground font-display font-bold text-lg pt-2 border-t border-border">
-                  <span>Total</span>
-                  <span>AED {total}</span>
+                  <span>Total</span><span>AED {total}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
-                <Check className="h-3 w-3 text-primary" />
-                Free express shipping across UAE
+                <Check className="h-3 w-3 text-primary" /> Free express shipping across UAE
               </div>
             </div>
           </motion.div>

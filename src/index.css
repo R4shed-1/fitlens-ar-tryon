@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,55 +6,54 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
+    --background: 36 33% 97%;
+    --foreground: 24 10% 15%;
 
-    --card: 222 40% 10%;
-    --card-foreground: 210 40% 96%;
+    --card: 36 30% 95%;
+    --card-foreground: 24 10% 15%;
 
-    --popover: 222 40% 10%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 36 30% 95%;
+    --popover-foreground: 24 10% 15%;
 
-    --primary: 190 100% 50%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 30 60% 42%;
+    --primary-foreground: 36 33% 97%;
 
-    --secondary: 222 30% 16%;
-    --secondary-foreground: 210 40% 90%;
+    --secondary: 32 25% 90%;
+    --secondary-foreground: 24 10% 25%;
 
-    --muted: 222 30% 14%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 36 20% 92%;
+    --muted-foreground: 24 8% 50%;
 
-    --accent: 270 80% 65%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 14 45% 55%;
+    --accent-foreground: 36 33% 97%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 36 33% 97%;
 
-    --border: 222 30% 18%;
-    --input: 222 30% 18%;
-    --ring: 190 100% 50%;
+    --border: 30 20% 88%;
+    --input: 30 20% 88%;
+    --ring: 30 60% 42%;
 
     --radius: 0.75rem;
 
-    --cyan: 190 100% 50%;
-    --cyan-glow: 190 100% 65%;
-    --purple: 270 80% 65%;
-    --purple-glow: 270 80% 75%;
-    --navy-deep: 222 47% 4%;
-    --glass: 222 40% 12%;
-    --glass-border: 222 30% 22%;
+    --warm-gold: 30 60% 42%;
+    --warm-gold-light: 32 55% 58%;
+    --terracotta: 14 45% 55%;
+    --terracotta-light: 14 40% 68%;
+    --cream-deep: 36 30% 92%;
+    --warm-border: 30 20% 85%;
 
-    --sidebar-background: 222 40% 8%;
-    --sidebar-foreground: 210 40% 90%;
-    --sidebar-primary: 190 100% 50%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 30% 16%;
-    --sidebar-accent-foreground: 210 40% 90%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 190 100% 50%;
+    --sidebar-background: 36 30% 95%;
+    --sidebar-foreground: 24 10% 25%;
+    --sidebar-primary: 30 60% 42%;
+    --sidebar-primary-foreground: 36 33% 97%;
+    --sidebar-accent: 32 25% 90%;
+    --sidebar-accent-foreground: 24 10% 25%;
+    --sidebar-border: 30 20% 88%;
+    --sidebar-ring: 30 60% 42%;
 
-    --font-display: 'Space Grotesk', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'DM Sans', sans-serif;
   }
 }
 
@@ -75,38 +74,40 @@
 
 @layer utilities {
   .glass-card {
-    background: hsl(var(--glass) / 0.6);
-    backdrop-filter: blur(20px);
-    border: 1px solid hsl(var(--glass-border) / 0.5);
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--warm-border));
+    box-shadow: 0 2px 16px hsl(var(--warm-gold) / 0.06);
   }
 
-  .glow-cyan {
-    box-shadow: 0 0 30px hsl(var(--cyan) / 0.3), 0 0 60px hsl(var(--cyan) / 0.1);
-  }
-
-  .glow-text-cyan {
-    text-shadow: 0 0 20px hsl(var(--cyan) / 0.5);
+  .glow-warm {
+    box-shadow: 0 4px 24px hsl(var(--warm-gold) / 0.15);
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, hsl(var(--cyan)), hsl(var(--purple)));
+    background: linear-gradient(135deg, hsl(var(--warm-gold)), hsl(var(--terracotta)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .gradient-border {
-    border-image: linear-gradient(135deg, hsl(var(--cyan)), hsl(var(--purple))) 1;
+    border-image: linear-gradient(135deg, hsl(var(--warm-gold)), hsl(var(--terracotta))) 1;
   }
 
   .gradient-bg {
-    background: linear-gradient(135deg, hsl(var(--cyan) / 0.15), hsl(var(--purple) / 0.15));
+    background: linear-gradient(135deg, hsl(var(--warm-gold) / 0.1), hsl(var(--terracotta) / 0.08));
+  }
+
+  /* keep old class names as aliases for compatibility */
+  .glow-cyan {
+    box-shadow: 0 4px 24px hsl(var(--warm-gold) / 0.18);
+  }
+
+  .glow-text-cyan {
+    color: hsl(var(--primary));
   }
 
   .ar-grid {
-    background-image: 
-      linear-gradient(hsl(var(--cyan) / 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--cyan) / 0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
+    background: none;
   }
 }

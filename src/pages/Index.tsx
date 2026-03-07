@@ -20,30 +20,30 @@ const steps = [
 const Index = () => (
   <div className="min-h-screen">
     {/* Hero */}
-    <section className="relative min-h-screen flex items-center overflow-hidden ar-grid">
-      {/* Glow effects */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-accent/10 rounded-full blur-[100px]" />
+    <section className="relative min-h-screen flex items-center overflow-hidden">
+      {/* Soft warm gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-secondary/40 to-background" />
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px]" />
 
-      <div className="container mx-auto px-4 pt-24 pb-16">
+      <div className="container mx-auto px-4 pt-24 pb-16 relative">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div initial="hidden" animate="visible" className="space-y-6">
             <motion.div custom={0} variants={fadeUp}>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium">
-                <Zap className="h-3 w-3" /> AI-Powered Virtual Try-On
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium tracking-wide">
+                <Sparkles className="h-3 w-3" /> AI-Powered Virtual Try-On
               </span>
             </motion.div>
             <motion.h1 custom={1} variants={fadeUp} className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-foreground">
               Try Before You Buy —{" "}
-              <span className="gradient-text">Powered by AI & AR</span>
+              <span className="gradient-text italic">Elegance Meets Innovation</span>
             </motion.h1>
-            <motion.p custom={2} variants={fadeUp} className="text-lg text-muted-foreground max-w-lg">
+            <motion.p custom={2} variants={fadeUp} className="text-lg text-muted-foreground max-w-lg leading-relaxed">
               See how glasses, accessories, and more look on you in real time. No guesswork, no returns — just confidence.
             </motion.p>
             <motion.div custom={3} variants={fadeUp} className="flex flex-wrap gap-4">
               <Link
                 to="/ar-tryon"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-display font-semibold hover:bg-primary/90 transition-colors glow-cyan"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-display font-semibold hover:bg-primary/90 transition-colors glow-warm"
               >
                 <Eye className="h-5 w-5" /> Try in AR
               </Link>
@@ -70,7 +70,7 @@ const Index = () => (
             transition={{ duration: 0.8, delay: 0.3 }}
             className="relative"
           >
-            <div className="relative rounded-2xl overflow-hidden glow-cyan">
+            <div className="relative rounded-2xl overflow-hidden glow-warm bg-secondary/50 p-8">
               <img src={heroImage} alt="FitLens AR Virtual Try-On" className="w-full animate-float" />
             </div>
           </motion.div>
@@ -88,7 +88,7 @@ const Index = () => (
           className="text-center mb-16"
         >
           <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            How <span className="gradient-text">Virtual Try-On</span> Works
+            How <span className="gradient-text italic">Virtual Try-On</span> Works
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto">
             Four simple steps to find your perfect pair — no store visit needed.
@@ -108,7 +108,7 @@ const Index = () => (
               <div className="mx-auto mb-4 h-12 w-12 rounded-xl gradient-bg flex items-center justify-center">
                 <step.icon className="h-6 w-6 text-primary" />
               </div>
-              <div className="text-xs text-primary font-bold mb-2">Step {i + 1}</div>
+              <div className="text-xs text-primary font-bold mb-2 tracking-widest uppercase">Step {i + 1}</div>
               <h3 className="font-display font-semibold text-foreground mb-1">{step.title}</h3>
               <p className="text-sm text-muted-foreground">{step.desc}</p>
             </motion.div>
@@ -119,7 +119,7 @@ const Index = () => (
 
     {/* Featured Products */}
     <section className="py-24 relative">
-      <div className="absolute inset-0 gradient-bg opacity-30" />
+      <div className="absolute inset-0 gradient-bg opacity-40" />
       <div className="container mx-auto px-4 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -129,7 +129,7 @@ const Index = () => (
         >
           <div>
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-2">
-              Featured <span className="gradient-text">Collection</span>
+              Featured <span className="gradient-text italic">Collection</span>
             </h2>
             <p className="text-muted-foreground">Curated picks, all AR-ready.</p>
           </div>
@@ -161,17 +161,17 @@ const Index = () => (
           viewport={{ once: true }}
           className="glass-card rounded-2xl p-12 text-center relative overflow-hidden"
         >
-          <div className="absolute inset-0 gradient-bg opacity-40" />
+          <div className="absolute inset-0 gradient-bg opacity-50" />
           <div className="relative">
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Ready to See the <span className="gradient-text">Future</span>?
+              Ready to Find Your <span className="gradient-text italic">Perfect Pair</span>?
             </h2>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
               Experience our AI-powered virtual try-on and never second-guess an online purchase again.
             </p>
             <Link
               to="/ar-tryon"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-display font-semibold text-lg hover:bg-primary/90 transition-colors glow-cyan"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-display font-semibold text-lg hover:bg-primary/90 transition-colors glow-warm"
             >
               <Eye className="h-5 w-5" /> Try AR Now
             </Link>
