@@ -25,14 +25,14 @@ const botResponses: Record<string, string> = {
 const AIChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hey! 👋 I'm your FitLens AI assistant. How can I help you find the perfect eyewear today?" },
+    { role: "assistant", content: "Hello! 👋 I'm your FitLens styling assistant. How can I help you find the perfect eyewear today?" },
   ]);
   const [input, setInput] = useState("");
 
   const send = (text: string) => {
     if (!text.trim()) return;
     const userMsg: Message = { role: "user", content: text };
-    const botReply = botResponses[text] || "Thanks for your message! Our team will get back to you shortly. In the meantime, try our AR feature to explore our collection! 🕶️";
+    const botReply = botResponses[text] || "Thank you for your message! Our team will get back to you shortly. In the meantime, try our AR feature to explore our collection! 🕶️";
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: botReply }]);
     setInput("");
   };
@@ -44,7 +44,7 @@ const AIChatbot = () => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg glow-cyan ${isOpen ? "hidden" : ""}`}
+        className={`fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg glow-warm ${isOpen ? "hidden" : ""}`}
       >
         <MessageCircle className="h-6 w-6" />
       </motion.button>
@@ -56,14 +56,14 @@ const AIChatbot = () => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] glass-card rounded-2xl flex flex-col overflow-hidden border border-border"
+            className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-background rounded-2xl flex flex-col overflow-hidden border border-border shadow-xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/50">
               <div className="flex items-center gap-2">
                 <Bot className="h-5 w-5 text-primary" />
-                <span className="font-display font-semibold text-sm text-foreground">FitLens AI</span>
-                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span className="font-display font-semibold text-sm text-foreground">FitLens Stylist</span>
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
               </div>
               <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-4 w-4" />

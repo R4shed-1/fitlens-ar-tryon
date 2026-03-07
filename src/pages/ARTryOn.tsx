@@ -13,7 +13,7 @@ const ARTryOn = () => {
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-2">
-            <span className="gradient-text">AR</span> Virtual Try-On
+            <span className="gradient-text italic">AR</span> Virtual Try-On
           </h1>
           <p className="text-muted-foreground">Select a product and see how it looks on you in real time.</p>
         </motion.div>
@@ -28,30 +28,17 @@ const ARTryOn = () => {
             >
               {cameraActive ? (
                 <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 to-card flex items-center justify-center">
-                  {/* Simulated camera feed */}
                   <div className="relative w-full h-full">
-                    {/* Face outline simulation */}
+                    {/* Face outline */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-48 h-64 rounded-[50%] border-2 border-primary/40 border-dashed" />
+                      <div className="w-48 h-64 rounded-[50%] border-2 border-primary/30 border-dashed" />
                     </div>
                     {/* Overlay glasses */}
                     <div className="absolute inset-0 flex items-center justify-center" style={{ paddingBottom: "15%" }}>
-                      <img
-                        src={selected.image}
-                        alt={selected.name}
-                        className="w-40 h-auto object-contain opacity-80 drop-shadow-lg"
-                      />
+                      <img src={selected.image} alt={selected.name} className="w-40 h-auto object-contain opacity-80 drop-shadow-lg" />
                     </div>
-                    {/* Scan line */}
-                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-line" />
-                    {/* Corner markers */}
-                    {["top-4 left-4", "top-4 right-4", "bottom-4 left-4", "bottom-4 right-4"].map((pos) => (
-                      <div key={pos} className={`absolute ${pos} w-6 h-6 border-primary/60 ${
-                        pos.includes("top") ? "border-t-2" : "border-b-2"
-                      } ${pos.includes("left") ? "border-l-2" : "border-r-2"}`} />
-                    ))}
                     {/* Status */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-medium flex items-center gap-1.5">
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1.5 border border-primary/20">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                       AR Active — {selected.name}
                     </div>
@@ -59,13 +46,13 @@ const ARTryOn = () => {
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                  <div className="h-20 w-20 rounded-full gradient-bg flex items-center justify-center animate-pulse-glow">
+                  <div className="h-20 w-20 rounded-full gradient-bg flex items-center justify-center">
                     <Camera className="h-10 w-10 text-primary" />
                   </div>
                   <p className="text-muted-foreground text-sm">Enable camera to start AR try-on</p>
                   <button
                     onClick={() => setCameraActive(true)}
-                    className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-display font-semibold hover:bg-primary/90 transition-colors glow-cyan"
+                    className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-display font-semibold hover:bg-primary/90 transition-colors glow-warm"
                   >
                     Start Camera
                   </button>
@@ -75,15 +62,8 @@ const ARTryOn = () => {
 
             {/* Controls */}
             {cameraActive && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex justify-center gap-4 mt-4"
-              >
-                <button
-                  onClick={() => setCameraActive(false)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors"
-                >
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center gap-4 mt-4">
+                <button onClick={() => setCameraActive(false)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors">
                   <RotateCcw className="h-4 w-4" /> Reset
                 </button>
                 <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors">
@@ -106,7 +86,7 @@ const ARTryOn = () => {
                   onClick={() => setSelectedIdx(i)}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
                     i === selectedIdx
-                      ? "glass-card border-primary/40 glow-cyan"
+                      ? "glass-card border-primary/40 glow-warm"
                       : "glass-card hover:border-primary/20"
                   }`}
                 >
@@ -121,7 +101,6 @@ const ARTryOn = () => {
               ))}
             </div>
 
-            {/* Quick nav */}
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() => setSelectedIdx((i) => Math.max(0, i - 1))}
@@ -137,7 +116,6 @@ const ARTryOn = () => {
               </button>
             </div>
 
-            {/* Add to cart */}
             <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-display font-semibold hover:bg-primary/90 transition-colors">
               <ShoppingCart className="h-5 w-5" /> Add {selected.name} to Cart
             </button>

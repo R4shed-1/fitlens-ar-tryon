@@ -26,7 +26,6 @@ const ProductDetail = () => {
         </Link>
 
         <div className="grid lg:grid-cols-2 gap-12">
-          {/* Image */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -35,7 +34,6 @@ const ProductDetail = () => {
             <img src={product.image} alt={product.name} className="w-3/4 h-3/4 object-contain" />
           </motion.div>
 
-          {/* Details */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
             <div>
               <p className="text-xs text-primary uppercase tracking-widest font-medium mb-1">{product.category}</p>
@@ -71,7 +69,7 @@ const ProductDetail = () => {
             <div className="flex flex-wrap gap-3 pt-4">
               <Link
                 to={`/ar-tryon?product=${product.id}`}
-                className="flex-1 min-w-[160px] inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-display font-semibold hover:bg-primary/90 transition-colors glow-cyan"
+                className="flex-1 min-w-[160px] inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-display font-semibold hover:bg-primary/90 transition-colors glow-warm"
               >
                 <Eye className="h-5 w-5" /> Try with AR
               </Link>
@@ -91,10 +89,9 @@ const ProductDetail = () => {
           </motion.div>
         </div>
 
-        {/* AI Recommendations */}
         <section className="mt-24">
           <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-            <span className="gradient-text">AI Recommends</span> — You May Also Like
+            <span className="gradient-text italic">Curated for You</span> — You May Also Like
           </h2>
           <p className="text-muted-foreground text-sm mb-8">Based on your browsing and style preferences.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
