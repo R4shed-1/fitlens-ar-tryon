@@ -14,13 +14,11 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/75 backdrop-blur-xl border-b border-border/60">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-            <Glasses className="h-4.5 w-4.5 text-primary-foreground" />
-          </div>
-          <span className="font-display text-xl font-bold gradient-text tracking-tight">FitLens AR</span>
+        <Link to="/" className="flex items-center gap-2">
+          <Glasses className="h-7 w-7 text-primary" />
+          <span className="font-display text-xl font-bold gradient-text">FitLens AR</span>
         </Link>
 
         {/* Desktop nav */}
