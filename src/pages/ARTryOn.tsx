@@ -246,7 +246,7 @@ export default function ARTryOn3D() {
       lastVideoTimeRef.current = videoTime;
 
       try {
-        const results = faceLandmarker.detectForVideo(video, videoTime * 1000);
+        const results = faceLandmarker.detectForVideo(video, performance.now());
 
         if (results && results.faceLandmarks && results.faceLandmarks.length > 0) {
           const landmarks = results.faceLandmarks[0];
@@ -301,14 +301,14 @@ export default function ARTryOn3D() {
             const normalizedY = -(centerY / canvas.height) * 2 + 1;
             
             glassesModelRef.current.position.x = normalizedX * 2;
-            glassesModelRef.current.position.y = normalizedY * 2;
+            glassesModelRef.current.position.y = normalizedY * 2 + 0.3;
             glassesModelRef.current.position.z = 0;
             
             // Rotate glasses to match face angle
             glassesModelRef.current.rotation.z = -angle;
             
-            // Scale based on eye distance
-            const scale = (eyeDistance / canvas.width) * 8;
+            // Scale based on eye distance - MUCH SMALLER
+            const scale = (eyeDistance / canvas.width) * 1.5;
             glassesModelRef.current.scale.set(scale, scale, scale);
             
             // Render 3D scene
