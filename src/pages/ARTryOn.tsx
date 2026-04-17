@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, Upload, Loader2, RefreshCw } from 'lucide-react';
+import { Camera, Upload, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface GlassesOverlay {
   id: string;
@@ -14,10 +14,10 @@ interface GlassesOverlay {
 }
 
 const glassesOptions: GlassesOverlay[] = [
-  { id: 'aviator', name: 'Aviator', image: '/glasses/aviator.svg', offsetX: 0, offsetY: -15, scale: 1.9 },
-  { id: 'wayfarer', name: 'Wayfarer', image: '/glasses/wayfarer.svg', offsetX: 0, offsetY: -10, scale: 1.8 },
-  { id: 'round', name: 'Round', image: '/glasses/round.svg', offsetX: 0, offsetY: -12, scale: 1.7 },
-  { id: 'cat-eye', name: 'Cat Eye', image: '/glasses/cat-eye.svg', offsetX: 0, offsetY: -15, scale: 1.85 },
+  { id: 'aviator', name: 'Aviator', image: '/glasses/aviator.png', offsetX: 0, offsetY: -15, scale: 1.9 },
+  { id: 'wayfarer', name: 'Wayfarer', image: '/glasses/wayfarer.png', offsetX: 0, offsetY: -10, scale: 1.8 },
+  { id: 'round', name: 'Round', image: '/glasses/round.png', offsetX: 0, offsetY: -12, scale: 1.7 },
+  { id: 'cat-eye', name: 'Cat Eye', image: '/glasses/cat-eye.png', offsetX: 0, offsetY: -15, scale: 1.85 },
 ];
 
 export default function ARTryOn() {
@@ -27,8 +27,15 @@ export default function ARTryOn() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedGlasses, setSelectedGlasses] = useState<GlassesOverlay>(glassesOptions[0]);
   const [error, setError] = useState<string | null>(null);
+  const [debug, setDebug] = useState({
+    imageLoaded: false,
+    faceDetected: false,
+    landmarksFound: false,
+    drawingActive: false,
+  });
   const animationFrameRef = useRef<number>();
-  const glassesImageRef = useRef<HTMLImageElement>();
+  const glassesImageRef = useRef<HTMLImageElement | null>(null);
+  const isDrawingRef = useRef(false);
 
   useEffect(() => {
     const loadModels = async () => {
@@ -54,9 +61,12 @@ export default function ARTryOn() {
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setIsStreaming(true);
-        setError(null);
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().then(() => {
+            setIsStreaming(true);
+            setError(null);
+          });
+        };
       }
     } catch (err) {
       setError('Camera access denied. Please enable camera permissions.');
@@ -65,6 +75,7 @@ export default function ARTryOn() {
   };
 
   const stopWebcam = () => {
+    isDrawingRef.current = false;
     if (videoRef.current?.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach((track) => track.stop());
@@ -72,17 +83,30 @@ export default function ARTryOn() {
       setIsStreaming(false);
     }
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    setDebug({ imageLoaded: debug.imageLoaded, faceDetected: false, landmarksFound: false, drawingActive: false });
   };
 
   useEffect(() => {
+    setDebug((p) => ({ ...p, imageLoaded: false }));
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      glassesImageRef.current = img;
+      setDebug((p) => ({ ...p, imageLoaded: true }));
+    };
+    img.onerror = () => {
+      glassesImageRef.current = null;
+      setDebug((p) => ({ ...p, imageLoaded: false }));
+      console.error('Failed to load glasses image:', selectedGlasses.image);
+    };
     img.src = selectedGlasses.image;
-    img.onload = () => { glassesImageRef.current = img; };
-    img.onerror = () => console.error('Failed to load glasses image');
+    return () => {
+      glassesImageRef.current = null;
+    };
   }, [selectedGlasses]);
 
   const detectFaceAndOverlay = async () => {
+    if (!isDrawingRef.current) return;
     if (!videoRef.current || !canvasRef.current || !isModelLoaded) {
       animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
       return;
@@ -90,15 +114,17 @@ export default function ARTryOn() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    if (!ctx || video.videoWidth === 0) {
+    if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) {
       animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
       return;
     }
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
 
-    // Mirror the video horizontally for natural selfie view
+    // Mirror the video for natural selfie view
     ctx.save();
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
@@ -107,13 +133,19 @@ export default function ARTryOn() {
 
     try {
       const detections = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
         .withFaceLandmarks();
 
-      if (detections && glassesImageRef.current) {
+      if (detections) {
         const landmarks = detections.landmarks;
         const leftEye = landmarks.getLeftEye();
         const rightEye = landmarks.getRightEye();
+
+        if (!leftEye?.length || !rightEye?.length) {
+          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: false }));
+          animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
+          return;
+        }
 
         const avg = (pts: { x: number; y: number }[]) => ({
           x: pts.reduce((a, p) => a + p.x, 0) / pts.length,
@@ -124,26 +156,36 @@ export default function ARTryOn() {
 
         const eyeDistance = Math.hypot(r.x - l.x, r.y - l.y);
         const angle = Math.atan2(r.y - l.y, r.x - l.x);
-
-        const glassesWidth = eyeDistance * selectedGlasses.scale;
-        const glassesHeight = (glassesImageRef.current.height / glassesImageRef.current.width) * glassesWidth;
         const centerX = (l.x + r.x) / 2;
         const centerY = (l.y + r.y) / 2;
 
-        // Mirror coordinates because canvas is mirrored
+        // Mirror coords because canvas is mirrored
         const mirroredX = canvas.width - centerX;
 
-        ctx.save();
-        ctx.translate(mirroredX, centerY + selectedGlasses.offsetY);
-        ctx.rotate(-angle);
-        ctx.drawImage(
-          glassesImageRef.current,
-          -glassesWidth / 2 + selectedGlasses.offsetX,
-          -glassesHeight / 2,
-          glassesWidth,
-          glassesHeight,
-        );
-        ctx.restore();
+        if (glassesImageRef.current && glassesImageRef.current.complete) {
+          const glassesWidth = eyeDistance * selectedGlasses.scale;
+          const glassesHeight = (glassesImageRef.current.height / glassesImageRef.current.width) * glassesWidth;
+
+          ctx.save();
+          ctx.translate(mirroredX, centerY + selectedGlasses.offsetY);
+          ctx.rotate(-angle);
+          ctx.globalAlpha = 0.95;
+          ctx.drawImage(
+            glassesImageRef.current,
+            -glassesWidth / 2 + selectedGlasses.offsetX,
+            -glassesHeight / 2,
+            glassesWidth,
+            glassesHeight,
+          );
+          ctx.globalAlpha = 1;
+          ctx.restore();
+
+          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: true }));
+        } else {
+          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: false }));
+        }
+      } else {
+        setDebug((p) => ({ ...p, faceDetected: false, landmarksFound: false, drawingActive: false }));
       }
     } catch (err) {
       console.error('Detection error:', err);
@@ -153,8 +195,12 @@ export default function ARTryOn() {
   };
 
   useEffect(() => {
-    if (isStreaming && isModelLoaded) detectFaceAndOverlay();
+    if (isStreaming && isModelLoaded) {
+      isDrawingRef.current = true;
+      detectFaceAndOverlay();
+    }
     return () => {
+      isDrawingRef.current = false;
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,6 +217,17 @@ export default function ARTryOn() {
     }
   };
 
+  const StatusDot = ({ ok, label }: { ok: boolean; label: string }) => (
+    <div className="flex items-center gap-2 text-xs">
+      {ok ? (
+        <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+      ) : (
+        <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+      )}
+      <span className={ok ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
+    </div>
+  );
+
   return (
     <div className="min-h-screen pt-24 pb-16 bg-background">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -186,6 +243,15 @@ export default function ARTryOn() {
             <p className="text-destructive text-center text-sm">{error}</p>
           </Card>
         )}
+
+        <Card className="p-4 mb-6 glass-card">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatusDot ok={isModelLoaded} label={`Models: ${isModelLoaded ? 'Loaded' : 'Loading...'}`} />
+            <StatusDot ok={debug.imageLoaded} label={`Glasses PNG: ${debug.imageLoaded ? 'Loaded' : 'Loading...'}`} />
+            <StatusDot ok={debug.faceDetected} label={`Face: ${debug.faceDetected ? 'Detected' : 'Searching...'}`} />
+            <StatusDot ok={debug.drawingActive} label={`Drawing: ${debug.drawingActive ? 'Active' : 'Waiting...'}`} />
+          </div>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
@@ -272,8 +338,9 @@ export default function ARTryOn() {
                 <ol className="text-xs text-muted-foreground space-y-1">
                   <li>1. Click "Start Camera" to begin</li>
                   <li>2. Position your face in the frame</li>
-                  <li>3. Select different glasses to try on</li>
-                  <li>4. Capture photos you like!</li>
+                  <li>3. Watch the status indicators turn on</li>
+                  <li>4. Select different glasses to try on</li>
+                  <li>5. Capture photos you like!</li>
                 </ol>
               </div>
             </Card>
