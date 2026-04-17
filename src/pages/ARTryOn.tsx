@@ -38,6 +38,9 @@ export default function ARTryOn() {
   const glassesImageRef = useRef<HTMLImageElement | null>(null);
   const isDrawingRef = useRef(false);
   const lastVideoTimeRef = useRef(-1);
+  const smoothedLeftRef = useRef({ x: 0, y: 0 });
+  const smoothedRightRef = useRef({ x: 0, y: 0 });
+  const smoothingFactor = 0.7; // Higher = smoother but more lag, lower = more responsive but jittery
 
   // Load MediaPipe Face Landmarker
   useEffect(() => {
