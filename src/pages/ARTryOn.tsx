@@ -132,86 +132,108 @@ export default function ARTryOn() {
     ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
     ctx.restore();
 
+    // ALWAYS DRAW TEST BOX (regardless of detection)
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+    ctx.fillRect(50, 50, 300, 100);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 30px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('CANVAS WORKS!', 70, 110);
+
     try {
       const detections = await faceapi
         .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
         .withFaceLandmarks();
 
       if (detections) {
-        // SIMPLE TEST: confirm canvas drawing works
-        ctx.fillStyle = 'red';
-        ctx.fillRect(100, 100, 200, 100);
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 30px Arial';
-        ctx.fillText('TEST OVERLAY', 120, 160);
-
         console.log('✅ FACE DETECTED');
         const landmarks = detections.landmarks;
         const leftEyePoints = landmarks.getLeftEye();
         const rightEyePoints = landmarks.getRightEye();
 
-        console.log('👁️ Eye points:', {
-          left: leftEyePoints?.length || 0,
-          right: rightEyePoints?.length || 0,
-        });
+        if (leftEyePoints && rightEyePoints && leftEyePoints.length > 0 && rightEyePoints.length > 0) {
+          console.log('✅ LANDMARKS FOUND');
 
-        if (!leftEyePoints || !rightEyePoints || leftEyePoints.length === 0 || rightEyePoints.length === 0) {
-          console.error('❌ NO EYE LANDMARKS FOUND!');
+          const leftEyeCenter = {
+            x: leftEyePoints.reduce((sum, p) => sum + p.x, 0) / leftEyePoints.length,
+            y: leftEyePoints.reduce((sum, p) => sum + p.y, 0) / leftEyePoints.length,
+          };
+          const rightEyeCenter = {
+            x: rightEyePoints.reduce((sum, p) => sum + p.x, 0) / rightEyePoints.length,
+            y: rightEyePoints.reduce((sum, p) => sum + p.y, 0) / rightEyePoints.length,
+          };
+
+          const mirroredLeft = { x: canvas.width - leftEyeCenter.x, y: leftEyeCenter.y };
+          const mirroredRight = { x: canvas.width - rightEyeCenter.x, y: rightEyeCenter.y };
+          const centerPoint = {
+            x: (mirroredLeft.x + mirroredRight.x) / 2,
+            y: (mirroredLeft.y + mirroredRight.y) / 2,
+          };
+
+          // RED DOTS on eyes
           ctx.fillStyle = 'red';
-          ctx.font = 'bold 30px Arial';
-          ctx.fillText('NO EYE LANDMARKS!', 50, 50);
+          ctx.beginPath();
+          ctx.arc(mirroredLeft.x, mirroredLeft.y, 15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(mirroredRight.x, mirroredRight.y, 15, 0, Math.PI * 2);
+          ctx.fill();
+
+          // GREEN CENTER DOT
+          ctx.fillStyle = 'lime';
+          ctx.beginPath();
+          ctx.arc(centerPoint.x, centerPoint.y, 18, 0, Math.PI * 2);
+          ctx.fill();
+
+          const eyeDistance = Math.sqrt(
+            Math.pow(mirroredRight.x - mirroredLeft.x, 2) +
+            Math.pow(mirroredRight.y - mirroredLeft.y, 2)
+          );
+          const angle = Math.atan2(
+            mirroredRight.y - mirroredLeft.y,
+            mirroredRight.x - mirroredLeft.x
+          );
+          const glassesWidth = eyeDistance * 1.8;
+          const glassesHeight = glassesWidth * 0.35;
+
+          // YELLOW BOX
+          ctx.save();
+          ctx.translate(centerPoint.x, centerPoint.y - 15);
+          ctx.rotate(angle);
+          ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
+          ctx.fillRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 5;
+          ctx.strokeRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
+          ctx.fillStyle = 'black';
+          ctx.font = 'bold 24px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('GLASSES', 0, 5);
+          ctx.restore();
+
+          // Try to draw actual glasses if loaded
+          if (glassesImageRef.current && glassesImageRef.current.complete) {
+            ctx.save();
+            ctx.translate(centerPoint.x, centerPoint.y + selectedGlasses.offsetY);
+            ctx.rotate(angle);
+            ctx.globalAlpha = 0.95;
+            ctx.drawImage(
+              glassesImageRef.current,
+              -glassesWidth / 2 + selectedGlasses.offsetX,
+              -glassesHeight / 2,
+              glassesWidth,
+              glassesHeight
+            );
+            ctx.restore();
+          }
+
+          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: true }));
+        } else {
+          console.log('❌ NO LANDMARKS');
           setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: false, drawingActive: false }));
-          animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
-          return;
         }
-
-        const leftEyeCenter = {
-          x: leftEyePoints.reduce((sum, p) => sum + p.x, 0) / leftEyePoints.length,
-          y: leftEyePoints.reduce((sum, p) => sum + p.y, 0) / leftEyePoints.length,
-        };
-        const rightEyeCenter = {
-          x: rightEyePoints.reduce((sum, p) => sum + p.x, 0) / rightEyePoints.length,
-          y: rightEyePoints.reduce((sum, p) => sum + p.y, 0) / rightEyePoints.length,
-        };
-
-        const mirroredLeft = { x: canvas.width - leftEyeCenter.x, y: leftEyeCenter.y };
-        const mirroredRight = { x: canvas.width - rightEyeCenter.x, y: rightEyeCenter.y };
-        const centerPoint = {
-          x: (mirroredLeft.x + mirroredRight.x) / 2,
-          y: (mirroredLeft.y + mirroredRight.y) / 2,
-        };
-
-        console.log('🎯 POSITIONS:', { mirroredLeft, mirroredRight, centerPoint });
-
-        // BIG RED DOTS on eyes
-        ctx.fillStyle = 'red';
-        ctx.beginPath();
-        ctx.arc(mirroredLeft.x, mirroredLeft.y, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(mirroredRight.x, mirroredRight.y, 10, 0, Math.PI * 2);
-        ctx.fill();
-
-        // BIG GREEN CENTER DOT
-        ctx.fillStyle = 'lime';
-        ctx.beginPath();
-        ctx.arc(centerPoint.x, centerPoint.y, 12, 0, Math.PI * 2);
-        ctx.fill();
-
-        // YELLOW BOX (fixed 200x80, diagnostic)
-        const width = 200;
-        const height = 80;
-        ctx.fillStyle = 'rgba(255, 255, 0, 0.8)';
-        ctx.fillRect(centerPoint.x - width / 2, centerPoint.y - height / 2 - 15, width, height);
-        ctx.strokeStyle = 'red';
-        ctx.lineWidth = 5;
-        ctx.strokeRect(centerPoint.x - width / 2, centerPoint.y - height / 2 - 15, width, height);
-
-        console.log('DREW AT:', centerPoint.x, centerPoint.y);
-
-        setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: true }));
       } else {
-        console.log('⏳ No face detected');
+        console.log('⏳ No face');
         setDebug((p) => ({ ...p, faceDetected: false, landmarksFound: false, drawingActive: false }));
       }
     } catch (err) {
