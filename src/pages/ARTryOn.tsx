@@ -40,17 +40,23 @@ export default function ARTryOn() {
   useEffect(() => {
     const loadModels = async () => {
       try {
-        // Local models from /public/models for reliability
         const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        ]);
+        console.log('🔄 Starting to load models from:', MODEL_URL);
+
+        console.log('Loading TinyFaceDetector...');
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        console.log('✅ TinyFaceDetector loaded');
+
+        console.log('Loading FaceLandmark68Net...');
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        console.log('✅ FaceLandmark68Net loaded');
+
         setIsModelLoaded(true);
-        console.log('✅ Face detection models loaded from /models');
+        console.log('✅ All face detection models loaded successfully');
       } catch (err) {
-        setError('Failed to load face detection models');
-        console.error('Model loading error:', err);
+        const errorMsg = 'Failed to load face detection models: ' + (err as Error).message;
+        setError(errorMsg);
+        console.error('❌ Model loading error:', err);
       }
     };
     loadModels();
