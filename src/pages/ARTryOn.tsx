@@ -136,6 +136,18 @@ export default function ARTryOn() {
     // Transparent overlay — clear instead of drawing video
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    console.log('DRAW LOOP ACTIVE');
+
+    // PERMANENT CANVAS-VISIBILITY MARKER
+    ctx.fillStyle = 'red';
+    ctx.fillRect(40, 40, 120, 60);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('CANVAS OK', 50, 70);
+    ctx.textBaseline = 'alphabetic';
+
     try {
       const detection = await faceapi
         .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
@@ -162,46 +174,77 @@ export default function ARTryOn() {
           };
 
           // Mirror X because the video is CSS-mirrored via scaleX(-1)
-          const left = { x: displayWidth - leftEyeCenter.x, y: leftEyeCenter.y };
-          const right = { x: displayWidth - rightEyeCenter.x, y: rightEyeCenter.y };
+          const leftEye = { x: displayWidth - leftEyeCenter.x, y: leftEyeCenter.y };
+          const rightEye = { x: displayWidth - rightEyeCenter.x, y: rightEyeCenter.y };
 
           const centerPoint = {
-            x: (left.x + right.x) / 2,
-            y: (left.y + right.y) / 2,
+            x: (leftEye.x + rightEye.x) / 2,
+            y: (leftEye.y + rightEye.y) / 2,
           };
 
-          const eyeDistance = Math.hypot(right.x - left.x, right.y - left.y);
-          const angle = Math.atan2(right.y - left.y, right.x - left.x);
+          const eyeDistance = Math.hypot(rightEye.x - leftEye.x, rightEye.y - leftEye.y);
+          const angle = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
           const glassesWidth = eyeDistance * selectedGlasses.scale;
           const glassesHeight = glassesWidth * 0.35;
+
+          console.log('leftEye', leftEye, 'rightEye', rightEye, 'centerPoint', centerPoint, 'glassesWidth', glassesWidth, 'glassesHeight', glassesHeight);
+
+          ctx.lineWidth = 4;
 
           // Red dot — left eye
           ctx.fillStyle = 'red';
           ctx.beginPath();
-          ctx.arc(left.x, left.y, 8, 0, Math.PI * 2);
+          ctx.arc(leftEye.x, leftEye.y, 12, 0, Math.PI * 2);
           ctx.fill();
+          ctx.strokeStyle = 'white';
+          ctx.stroke();
 
-          // Red dot — right eye
+          // Blue dot — right eye
+          ctx.fillStyle = 'blue';
           ctx.beginPath();
-          ctx.arc(right.x, right.y, 8, 0, Math.PI * 2);
+          ctx.arc(rightEye.x, rightEye.y, 12, 0, Math.PI * 2);
           ctx.fill();
+          ctx.strokeStyle = 'white';
+          ctx.stroke();
 
           // Green center dot
           ctx.fillStyle = 'lime';
           ctx.beginPath();
-          ctx.arc(centerPoint.x, centerPoint.y, 6, 0, Math.PI * 2);
+          ctx.arc(centerPoint.x, centerPoint.y, 14, 0, Math.PI * 2);
           ctx.fill();
+          ctx.strokeStyle = 'black';
+          ctx.stroke();
 
           // Yellow glasses rectangle (debug)
           ctx.save();
           ctx.translate(centerPoint.x, centerPoint.y);
           ctx.rotate(angle);
           ctx.strokeStyle = 'yellow';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 4;
           ctx.strokeRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
           ctx.restore();
 
-          // Actual glasses PNG
+          // Debug values
+          const lines = [
+            `video.videoWidth/Height: ${video.videoWidth} / ${video.videoHeight}`,
+            `video.clientWidth/Height: ${video.clientWidth} / ${video.clientHeight}`,
+            `canvas.width/Height: ${canvas.width} / ${canvas.height}`,
+            `leftEye: ${Math.round(leftEye.x)} / ${Math.round(leftEye.y)}`,
+            `rightEye: ${Math.round(rightEye.x)} / ${Math.round(rightEye.y)}`,
+            `centerPoint: ${Math.round(centerPoint.x)} / ${Math.round(centerPoint.y)}`,
+          ];
+          ctx.font = 'bold 12px monospace';
+          ctx.textAlign = 'left';
+          lines.forEach((line, i) => {
+            const y = 120 + i * 16;
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.strokeText(line, 10, y);
+            ctx.fillStyle = 'white';
+            ctx.fillText(line, 10, y);
+          });
+
+          // Actual glasses PNG (after debug markers)
           if (glassesImageRef.current && glassesImageRef.current.complete) {
             ctx.save();
             ctx.translate(centerPoint.x, centerPoint.y + selectedGlasses.offsetY);
@@ -215,28 +258,6 @@ export default function ARTryOn() {
             );
             ctx.restore();
           }
-
-          // Debug values
-          const lines = [
-            `video.videoWidth: ${video.videoWidth}`,
-            `video.videoHeight: ${video.videoHeight}`,
-            `video.clientWidth: ${video.clientWidth}`,
-            `video.clientHeight: ${video.clientHeight}`,
-            `canvas.width: ${canvas.width}`,
-            `canvas.height: ${canvas.height}`,
-            `centerPoint.x: ${Math.round(centerPoint.x)}`,
-            `centerPoint.y: ${Math.round(centerPoint.y)}`,
-          ];
-          ctx.font = 'bold 12px monospace';
-          ctx.textAlign = 'left';
-          lines.forEach((line, i) => {
-            const y = 18 + i * 16;
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3;
-            ctx.strokeText(line, 10, y);
-            ctx.fillStyle = 'white';
-            ctx.fillText(line, 10, y);
-          });
 
           setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: true }));
         } else {
@@ -330,7 +351,7 @@ export default function ARTryOn() {
               <div className="relative aspect-video bg-secondary rounded-xl overflow-hidden">
                 <video
                   ref={videoRef}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full"
                   style={{ transform: 'scaleX(-1)', zIndex: 1 }}
                   playsInline
                   muted
