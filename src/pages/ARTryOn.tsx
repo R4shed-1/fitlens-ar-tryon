@@ -171,9 +171,20 @@ export default function ARTryOn() {
 
           const mirroredLeft = { x: canvas.width - leftEyeCenter.x, y: leftEyeCenter.y };
           const mirroredRight = { x: canvas.width - rightEyeCenter.x, y: rightEyeCenter.y };
+
+          // FORCE coordinates into visible range
+          const safeLeft = {
+            x: Math.max(100, Math.min(canvas.width - 100, mirroredLeft.x)),
+            y: Math.max(100, Math.min(canvas.height - 100, mirroredLeft.y)),
+          };
+          const safeRight = {
+            x: Math.max(100, Math.min(canvas.width - 100, mirroredRight.x)),
+            y: Math.max(100, Math.min(canvas.height - 100, mirroredRight.y)),
+          };
+
           const centerPoint = {
-            x: (mirroredLeft.x + mirroredRight.x) / 2,
-            y: (mirroredLeft.y + mirroredRight.y) / 2,
+            x: (safeLeft.x + safeRight.x) / 2,
+            y: (safeLeft.y + safeRight.y) / 2,
           };
 
           // FORCE DRAW IN CENTER - TEST
