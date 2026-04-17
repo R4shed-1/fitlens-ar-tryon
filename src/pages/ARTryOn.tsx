@@ -310,12 +310,12 @@ export default function ARTryOn3D() {
           const normalizedX = (centerX / canvas.width) * 2 - 1;
           const normalizedY = -(centerY / canvas.height) * 2 + 1;
           
-          glassesModelRef.current.position.x = normalizedX * 2.5;
-          glassesModelRef.current.position.y = normalizedY * 2.5 + 0.15;
+          glassesModelRef.current.position.x = normalizedX * 1.2;
+          glassesModelRef.current.position.y = normalizedY * 1.2;
           glassesModelRef.current.position.z = 0;
           
           // Rotation - face forward + tilt with face
-          glassesModelRef.current.rotation.y = Math.PI / 2;
+          glassesModelRef.current.rotation.y = 0;
           glassesModelRef.current.rotation.z = -angle;
           
           // Scale based on eye distance
