@@ -217,6 +217,9 @@ export default function ARTryOn() {
           ctx.fillStyle = 'black';
           ctx.fillText('GLASSES HERE', testCenterX, testCenterY - 140);
 
+          console.log('🎨 ABOUT TO DRAW OVERLAYS - safeLeft:', safeLeft, 'safeRight:', safeRight, 'centerPoint:', centerPoint);
+
+          console.log('🔴 DRAWING RED DOTS NOW');
           // RED DOTS on eyes - MASSIVE SIZE
           ctx.fillStyle = 'red';
           ctx.beginPath();
