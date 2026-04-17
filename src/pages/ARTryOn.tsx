@@ -126,11 +126,10 @@ export default function ARTryOn() {
       canvas.height = video.videoHeight;
     }
 
-    // Mirror the video for natural selfie view
+    // Draw mirrored video
     ctx.save();
-    ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
     ctx.restore();
 
     try {
@@ -139,58 +138,95 @@ export default function ARTryOn() {
         .withFaceLandmarks();
 
       if (detections) {
+        console.log('✅ FACE DETECTED');
         const landmarks = detections.landmarks;
-        const leftEye = landmarks.getLeftEye();
-        const rightEye = landmarks.getRightEye();
+        const leftEyePoints = landmarks.getLeftEye();
+        const rightEyePoints = landmarks.getRightEye();
 
-        if (!leftEye?.length || !rightEye?.length) {
-          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: false }));
+        console.log('👁️ Eye points:', {
+          left: leftEyePoints?.length || 0,
+          right: rightEyePoints?.length || 0,
+        });
+
+        if (!leftEyePoints || !rightEyePoints || leftEyePoints.length === 0 || rightEyePoints.length === 0) {
+          console.error('❌ NO EYE LANDMARKS FOUND!');
+          ctx.fillStyle = 'red';
+          ctx.font = 'bold 30px Arial';
+          ctx.fillText('NO EYE LANDMARKS!', 50, 50);
+          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: false, drawingActive: false }));
           animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
           return;
         }
 
-        const avg = (pts: { x: number; y: number }[]) => ({
-          x: pts.reduce((a, p) => a + p.x, 0) / pts.length,
-          y: pts.reduce((a, p) => a + p.y, 0) / pts.length,
+        const leftEyeCenter = {
+          x: leftEyePoints.reduce((sum, p) => sum + p.x, 0) / leftEyePoints.length,
+          y: leftEyePoints.reduce((sum, p) => sum + p.y, 0) / leftEyePoints.length,
+        };
+        const rightEyeCenter = {
+          x: rightEyePoints.reduce((sum, p) => sum + p.x, 0) / rightEyePoints.length,
+          y: rightEyePoints.reduce((sum, p) => sum + p.y, 0) / rightEyePoints.length,
+        };
+
+        const mirroredLeft = { x: canvas.width - leftEyeCenter.x, y: leftEyeCenter.y };
+        const mirroredRight = { x: canvas.width - rightEyeCenter.x, y: rightEyeCenter.y };
+        const centerPoint = {
+          x: (mirroredLeft.x + mirroredRight.x) / 2,
+          y: (mirroredLeft.y + mirroredRight.y) / 2,
+        };
+
+        console.log('🎯 POSITIONS:', { mirroredLeft, mirroredRight, centerPoint });
+
+        // BIG RED DOTS on eyes
+        ctx.fillStyle = 'red';
+        ctx.beginPath();
+        ctx.arc(mirroredLeft.x, mirroredLeft.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(mirroredRight.x, mirroredRight.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // BIG GREEN CENTER DOT
+        ctx.fillStyle = 'lime';
+        ctx.beginPath();
+        ctx.arc(centerPoint.x, centerPoint.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        const eyeDistance = Math.hypot(mirroredRight.x - mirroredLeft.x, mirroredRight.y - mirroredLeft.y);
+        const angle = Math.atan2(mirroredRight.y - mirroredLeft.y, mirroredRight.x - mirroredLeft.x);
+        const glassesWidth = eyeDistance * 1.6;
+        const glassesHeight = glassesWidth * 0.35;
+
+        console.log('📏 DIMENSIONS:', {
+          eyeDistance,
+          glassesWidth,
+          glassesHeight,
+          angle: ((angle * 180) / Math.PI).toFixed(1) + '°',
         });
-        const l = avg(leftEye);
-        const r = avg(rightEye);
 
-        const eyeDistance = Math.hypot(r.x - l.x, r.y - l.y);
-        const angle = Math.atan2(r.y - l.y, r.x - l.x);
-        const centerX = (l.x + r.x) / 2;
-        const centerY = (l.y + r.y) / 2;
+        // BRIGHT YELLOW BOX
+        ctx.save();
+        ctx.translate(centerPoint.x, centerPoint.y - 15);
+        ctx.rotate(angle);
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
+        ctx.fillRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('GLASSES HERE', 0, 5);
+        ctx.restore();
 
-        // Mirror coords because canvas is mirrored
-        const mirroredX = canvas.width - centerX;
+        console.log('🎨 DREW OVERLAY AT:', { x: centerPoint.x, y: centerPoint.y - 15 });
 
-        if (glassesImageRef.current && glassesImageRef.current.complete) {
-          const glassesWidth = eyeDistance * selectedGlasses.scale;
-          const glassesHeight = (glassesImageRef.current.height / glassesImageRef.current.width) * glassesWidth;
-
-          ctx.save();
-          ctx.translate(mirroredX, centerY + selectedGlasses.offsetY);
-          ctx.rotate(-angle);
-          ctx.globalAlpha = 0.95;
-          ctx.drawImage(
-            glassesImageRef.current,
-            -glassesWidth / 2 + selectedGlasses.offsetX,
-            -glassesHeight / 2,
-            glassesWidth,
-            glassesHeight,
-          );
-          ctx.globalAlpha = 1;
-          ctx.restore();
-
-          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: true }));
-        } else {
-          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: false }));
-        }
+        setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: true }));
       } else {
+        console.log('⏳ No face detected');
         setDebug((p) => ({ ...p, faceDetected: false, landmarksFound: false, drawingActive: false }));
       }
     } catch (err) {
-      console.error('Detection error:', err);
+      console.error('❌ ERROR:', err);
     }
 
     animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
