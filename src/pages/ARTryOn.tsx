@@ -11,16 +11,22 @@ interface GlassesModel {
   name: string;
   modelPath: string;
   preview: string;
+  /** Multiplier on inter-eye pixel distance to set width */
+  scaleFactor: number;
+  /** Vertical pixel offset (positive = lower on face) */
+  yOffset: number;
+  /** Extra Y rotation (radians) needed to face the camera */
+  rotY: number;
 }
 
 const glassesOptions: GlassesModel[] = [
-  { id: 'glasses-01', name: 'Sport Orange', modelPath: '/models-3d-all/glasses-01/scene.gltf', preview: '/models-3d-all/glasses-01/glasses_01.png' },
-  { id: 'glasses-02', name: 'Classic Black', modelPath: '/models-3d-all/glasses-02/scene.gltf', preview: '/models-3d-all/glasses-02/glasses_02.png' },
-  { id: 'glasses-03', name: 'Modern Blue', modelPath: '/models-3d-all/glasses-03/scene.gltf', preview: '/models-3d-all/glasses-03/glasses_03.png' },
-  { id: 'glasses-04', name: 'Red Frame', modelPath: '/models-3d-all/glasses-04/scene.gltf', preview: '/models-3d-all/glasses-04/glasses_04.png' },
-  { id: 'glasses-05', name: 'Gold Aviator', modelPath: '/models-3d-all/glasses-05/scene.gltf', preview: '/models-3d-all/glasses-05/glasses_05.png' },
-  { id: 'glasses-06', name: 'Purple Style', modelPath: '/models-3d-all/glasses-06/scene.gltf', preview: '/models-3d-all/glasses-06/glasses_06.png' },
-  { id: 'glasses-07', name: 'Round Wire', modelPath: '/models-3d-all/glasses-07/scene.gltf', preview: '/models-3d-all/glasses-07/glasses_07.png' },
+  { id: 'glasses-01', name: 'Sport Orange',  modelPath: '/models-3d-all/glasses-01/scene.gltf', preview: '/models-3d-all/glasses-01/glasses_01.png', scaleFactor: 0.012, yOffset: 8,   rotY: Math.PI / 2 },
+  { id: 'glasses-02', name: 'Classic Black', modelPath: '/models-3d-all/glasses-02/scene.gltf', preview: '/models-3d-all/glasses-02/glasses_02.png', scaleFactor: 0.45,  yOffset: 0,   rotY: Math.PI },
+  { id: 'glasses-03', name: 'Modern Blue',   modelPath: '/models-3d-all/glasses-03/scene.gltf', preview: '/models-3d-all/glasses-03/glasses_03.png', scaleFactor: 0.45,  yOffset: -10, rotY: Math.PI },
+  { id: 'glasses-04', name: 'Red Frame',     modelPath: '/models-3d-all/glasses-04/scene.gltf', preview: '/models-3d-all/glasses-04/glasses_04.png', scaleFactor: 0.13,  yOffset: -5,  rotY: Math.PI },
+  { id: 'glasses-05', name: 'Gold Aviator',  modelPath: '/models-3d-all/glasses-05/scene.gltf', preview: '/models-3d-all/glasses-05/glasses_05.png', scaleFactor: 0.13,  yOffset: 0,   rotY: Math.PI },
+  { id: 'glasses-06', name: 'Purple Style',  modelPath: '/models-3d-all/glasses-06/scene.gltf', preview: '/models-3d-all/glasses-06/glasses_06.png', scaleFactor: 0.45,  yOffset: 0,   rotY: Math.PI },
+  { id: 'glasses-07', name: 'Round Wire',    modelPath: '/models-3d-all/glasses-07/scene.gltf', preview: '/models-3d-all/glasses-07/glasses_07.png', scaleFactor: 0.45,  yOffset: -5,  rotY: Math.PI },
 ];
 
 export default function ARTryOn3D() {
@@ -48,10 +54,13 @@ export default function ARTryOn3D() {
   
   // Three.js references
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const glassesModelRef = useRef<THREE.Group | null>(null);
   const loaderRef = useRef<GLTFLoader>(new GLTFLoader());
+  const selectedRef = useRef<GlassesModel>(selectedGlasses);
+
+  useEffect(() => { selectedRef.current = selectedGlasses; }, [selectedGlasses]);
 
   // Load MediaPipe
   useEffect(() => {
@@ -88,20 +97,20 @@ export default function ARTryOn3D() {
     loadModel();
   }, []);
 
-  // Initialize Three.js
+  // Initialize Three.js with an OrthographicCamera in pixel space.
+  // x grows right, y grows DOWN (matches canvas pixel coords) so we can
+  // pass MediaPipe landmarks straight in.
   useEffect(() => {
     if (!threeCanvasRef.current) return;
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      threeCanvasRef.current.width / threeCanvasRef.current.height,
-      0.1,
-      1000
-    );
-    camera.position.z = 5;
+    const w = threeCanvasRef.current.width || 1280;
+    const h = threeCanvasRef.current.height || 720;
+    // left, right, top, bottom — top<bottom flips Y so y-down matches pixels
+    const camera = new THREE.OrthographicCamera(0, w, 0, h, -1000, 1000);
+    camera.position.z = 500;
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -109,30 +118,25 @@ export default function ARTryOn3D() {
       alpha: true,
       antialias: true,
     });
-    renderer.setSize(threeCanvasRef.current.width, threeCanvasRef.current.height);
+    renderer.setSize(w, h, false);
     renderer.setClearColor(0x000000, 0);
     rendererRef.current = renderer;
 
-    // Better lighting for realistic glasses
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-    scene.add(ambientLight);
-
-    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight1.position.set(1, 1, 1);
-    scene.add(directionalLight1);
-
-    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
-    directionalLight2.position.set(-1, 0, 1);
-    scene.add(directionalLight2);
-
-    console.log('✅ Three.js initialized');
+    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+    const d1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    d1.position.set(1, -1, 1);
+    scene.add(d1);
+    const d2 = new THREE.DirectionalLight(0xffffff, 0.4);
+    d2.position.set(-1, 0, 1);
+    scene.add(d2);
 
     return () => {
       renderer.dispose();
     };
   }, []);
 
-  // Load selected 3D model
+  // Load selected 3D model — auto-center geometry so the model's pivot is
+  // at the bridge of the glasses, then normalize size to width=1 unit.
   useEffect(() => {
     if (!sceneRef.current) return;
 
@@ -141,29 +145,34 @@ export default function ARTryOn3D() {
       glassesModelRef.current = null;
     }
 
-    console.log('🔄 Loading model:', selectedGlasses.name);
-    
     loaderRef.current.load(
       selectedGlasses.modelPath,
       (gltf) => {
-        const model = gltf.scene;
-        
-        // Initial tiny scale
-        model.scale.set(0.01, 0.01, 0.01);
-        model.position.set(0, 0, 0);
-        
-        // Rotate to face forward (models are often sideways)
-        model.rotation.y = Math.PI / 2;
-        
-        glassesModelRef.current = model;
-        sceneRef.current?.add(model);
-        
-        console.log('✅ Model loaded:', selectedGlasses.name);
+        const raw = gltf.scene;
+
+        // Compute bounding box and recenter geometry into a wrapper group
+        const box = new THREE.Box3().setFromObject(raw);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+
+        // Shift so origin = geometric center
+        raw.position.sub(center);
+        // Normalize so the widest axis = 1 unit; per-frame we multiply by
+        // eye distance so it always matches face width.
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const wrapper = new THREE.Group();
+        const inner = new THREE.Group();
+        inner.scale.setScalar(1 / maxDim);
+        inner.add(raw);
+        wrapper.add(inner);
+
+        glassesModelRef.current = wrapper;
+        sceneRef.current?.add(wrapper);
       },
       undefined,
-      (err) => {
-        console.error('❌ Model load error:', err);
-      }
+      (err) => console.error('GLTF load error:', err)
     );
   }, [selectedGlasses]);
 
@@ -234,9 +243,13 @@ export default function ARTryOn3D() {
       threeCanvasRef.current.height = video.videoHeight;
       
       if (rendererRef.current && cameraRef.current) {
-        rendererRef.current.setSize(canvas.width, canvas.height);
-        cameraRef.current.aspect = canvas.width / canvas.height;
-        cameraRef.current.updateProjectionMatrix();
+        rendererRef.current.setSize(canvas.width, canvas.height, false);
+        const cam = cameraRef.current;
+        cam.left = 0;
+        cam.right = canvas.width;
+        cam.top = 0;
+        cam.bottom = canvas.height;
+        cam.updateProjectionMatrix();
       }
     }
 
@@ -304,25 +317,24 @@ export default function ARTryOn3D() {
         const angle = Math.atan2(dy, dx);
         const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
-        // Position 3D glasses
+        // Position 3D glasses (pixel-space ortho camera → use raw px coords)
         if (glassesModelRef.current && cameraRef.current && rendererRef.current) {
-          // Normalize to 3D space
-          const normalizedX = (centerX / canvas.width) * 2 - 1;
-          const normalizedY = -(centerY / canvas.height) * 2 + 1;
-          
-          glassesModelRef.current.position.x = normalizedX * 1.2;
-          glassesModelRef.current.position.y = normalizedY * 1.2;
-          glassesModelRef.current.position.z = 0;
-          
-          // Rotation - face forward + tilt with face
-          glassesModelRef.current.rotation.y = 0;
-          glassesModelRef.current.rotation.z = -angle;
-          
-          // Scale based on eye distance
-          const scale = (eyeDistance / canvas.width) * 2.5;
-          glassesModelRef.current.scale.set(scale, scale, scale);
-          
-          // Render
+          const cfg = selectedRef.current;
+          const g = glassesModelRef.current;
+
+          g.position.x = centerX;
+          g.position.y = centerY + cfg.yOffset;
+          g.position.z = 0;
+
+          // Face camera + tilt with head
+          g.rotation.x = 0;
+          g.rotation.y = cfg.rotY;
+          g.rotation.z = -angle;
+
+          // Scale: model is normalized to 1 unit wide → multiply by eye-dist px
+          const s = eyeDistance * cfg.scaleFactor * 8; // 8 ≈ face-width / eye-dist
+          g.scale.set(s, s, s);
+
           rendererRef.current.render(sceneRef.current!, cameraRef.current);
         }
 
