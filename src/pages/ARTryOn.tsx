@@ -38,9 +38,11 @@ export default function ARTryOn() {
   const glassesImageRef = useRef<HTMLImageElement | null>(null);
   const isDrawingRef = useRef(false);
   const lastVideoTimeRef = useRef(-1);
+  
+  // Smoothing refs to reduce jitter/blinking
   const smoothedLeftRef = useRef({ x: 0, y: 0 });
   const smoothedRightRef = useRef({ x: 0, y: 0 });
-  const smoothingFactor = 0.7; // Higher = smoother but more lag, lower = more responsive but jittery
+  const smoothingFactor = 0.7; // Higher = smoother but more lag
 
   // Load MediaPipe Face Landmarker
   useEffect(() => {
@@ -117,8 +119,6 @@ export default function ARTryOn() {
       cancelAnimationFrame(animationFrameRef.current);
     }
     lastVideoTimeRef.current = -1;
-    smoothedLeftRef.current = { x: 0, y: 0 };
-    smoothedRightRef.current = { x: 0, y: 0 };
     setDebug({ imageLoaded: debug.imageLoaded, faceDetected: false, landmarksFound: false, drawingActive: false });
   };
 
@@ -211,18 +211,13 @@ export default function ARTryOn() {
           const mirroredLeftX = canvas.width - leftEyeX;
           const mirroredRightX = canvas.width - rightEyeX;
 
-          // Smooth the coordinates to reduce jitter
-          // Initialize on first detection to avoid lerp from (0,0)
-          if (smoothedLeftRef.current.x === 0 && smoothedLeftRef.current.y === 0) {
-            smoothedLeftRef.current = { x: mirroredLeftX, y: leftEyeY };
-            smoothedRightRef.current = { x: mirroredRightX, y: rightEyeY };
-          } else {
-            smoothedLeftRef.current.x = smoothedLeftRef.current.x * smoothingFactor + mirroredLeftX * (1 - smoothingFactor);
-            smoothedLeftRef.current.y = smoothedLeftRef.current.y * smoothingFactor + leftEyeY * (1 - smoothingFactor);
-            smoothedRightRef.current.x = smoothedRightRef.current.x * smoothingFactor + mirroredRightX * (1 - smoothingFactor);
-            smoothedRightRef.current.y = smoothedRightRef.current.y * smoothingFactor + rightEyeY * (1 - smoothingFactor);
-          }
+          // Apply smoothing to reduce jitter/blinking
+          smoothedLeftRef.current.x = smoothedLeftRef.current.x * smoothingFactor + mirroredLeftX * (1 - smoothingFactor);
+          smoothedLeftRef.current.y = smoothedLeftRef.current.y * smoothingFactor + leftEyeY * (1 - smoothingFactor);
+          smoothedRightRef.current.x = smoothedRightRef.current.x * smoothingFactor + mirroredRightX * (1 - smoothingFactor);
+          smoothedRightRef.current.y = smoothedRightRef.current.y * smoothingFactor + rightEyeY * (1 - smoothingFactor);
 
+          // Use smoothed coordinates
           const finalLeftX = smoothedLeftRef.current.x;
           const finalLeftY = smoothedLeftRef.current.y;
           const finalRightX = smoothedRightRef.current.x;
