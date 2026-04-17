@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Eye, Sparkles, Share2, ShieldCheck, Zap, Smartphone } from "lucide-react";
+import { ArrowRight, Eye, Sparkles, Share2, ShieldCheck, Zap, Smartphone, Quote, Star } from "lucide-react";
 import heroImage from "@/assets/hero-glasses.png";
 import ProductCard from "@/components/ProductCard";
 import { products } from "@/lib/products";
@@ -15,6 +15,19 @@ const steps = [
   { icon: Eye, title: "Select Product", desc: "Choose any AR-ready eyewear to try" },
   { icon: Sparkles, title: "See the Magic", desc: "AI overlays glasses on your face in real-time" },
   { icon: Share2, title: "Share & Buy", desc: "Share with friends or add to cart instantly" },
+];
+
+const testimonials = [
+  { name: "Layla A.", city: "Dubai", text: "The 3D try-on feels exactly like the boutique. I bought my Maison Gold without ever leaving home.", rating: 5 },
+  { name: "Omar R.", city: "Abu Dhabi", text: "Frames sit perfectly on my face in the preview — no more guessing if a style suits me. Brilliant.", rating: 5 },
+  { name: "Fatima K.", city: "Sharjah", text: "Elegant, fast, and the delivery was next-day. FitLens AR is now my go-to for eyewear.", rating: 5 },
+];
+
+const stats = [
+  { value: "120K+", label: "Virtual fittings" },
+  { value: "4.9★", label: "Customer rating" },
+  { value: "48h", label: "UAE delivery" },
+  { value: "30-day", label: "Easy returns" },
 ];
 
 const Index = () => (
@@ -74,6 +87,27 @@ const Index = () => (
               <img src={heroImage} alt="FitLens AR Virtual Try-On" className="w-full animate-float" />
             </div>
           </motion.div>
+        </div>
+      </div>
+    </section>
+
+    {/* Stats strip */}
+    <section className="py-10 border-y border-warm-border/50 bg-gradient-to-r from-secondary/40 via-card to-secondary/40">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stats.map((s, i) => (
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+              className="text-center"
+            >
+              <p className="font-display text-3xl sm:text-4xl font-bold gradient-text">{s.value}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground tracking-wider uppercase mt-1">{s.label}</p>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
@@ -139,7 +173,10 @@ const Index = () => (
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.slice(0, 6).map((product) => (
+          {[
+            ...products.filter((p) => p.id.startsWith("ar-")).slice(0, 3),
+            ...products.filter((p) => !p.id.startsWith("ar-")).slice(0, 3),
+          ].map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
@@ -148,6 +185,52 @@ const Index = () => (
           <Link to="/products" className="text-primary text-sm font-medium">
             View All Products →
           </Link>
+        </div>
+      </div>
+    </section>
+
+    {/* Testimonials */}
+    <section className="py-24 relative">
+      <div className="container mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-14"
+        >
+          <div className="inline-flex items-center gap-3 mb-4">
+            <span className="h-px w-10 bg-primary/40" />
+            <span className="text-[11px] tracking-[0.4em] uppercase text-primary font-semibold">Loved across the Gulf</span>
+            <span className="h-px w-10 bg-primary/40" />
+          </div>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground">
+            Stories from our <span className="gradient-text italic">clients</span>
+          </h2>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {testimonials.map((t, i) => (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.12 }}
+              className="glass-card rounded-2xl p-7 relative hover:-translate-y-1 transition-transform duration-300"
+            >
+              <Quote className="h-8 w-8 text-primary/30 mb-3" />
+              <div className="flex gap-0.5 mb-4">
+                {Array.from({ length: t.rating }).map((_, idx) => (
+                  <Star key={idx} className="h-3.5 w-3.5 fill-primary text-primary" />
+                ))}
+              </div>
+              <p className="text-foreground/85 leading-relaxed mb-5 italic">"{t.text}"</p>
+              <div className="pt-4 border-t border-warm-border/60">
+                <p className="font-display font-semibold text-foreground">{t.name}</p>
+                <p className="text-xs text-muted-foreground tracking-wider uppercase">{t.city}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

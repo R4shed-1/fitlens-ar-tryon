@@ -20,13 +20,13 @@ interface GlassesModel {
 }
 
 const glassesOptions: GlassesModel[] = [
-  { id: 'glasses-01', name: 'Sport Orange',  modelPath: '/models-3d-all/glasses-01/scene.gltf', preview: '/models-3d-all/glasses-01/glasses_01.png', scaleFactor: 2.6, yOffset: -10, rotY: 0 },
-  { id: 'glasses-02', name: 'Classic Black', modelPath: '/models-3d-all/glasses-02/scene.gltf', preview: '/models-3d-all/glasses-02/glasses_02.png', scaleFactor: 2.6, yOffset: -20, rotY: Math.PI },
-  { id: 'glasses-03', name: 'Modern Blue',   modelPath: '/models-3d-all/glasses-03/scene.gltf', preview: '/models-3d-all/glasses-03/glasses_03.png', scaleFactor: 2.6, yOffset: -18, rotY: Math.PI },
-  { id: 'glasses-04', name: 'Red Frame',     modelPath: '/models-3d-all/glasses-04/scene.gltf', preview: '/models-3d-all/glasses-04/glasses_04.png', scaleFactor: 2.6, yOffset: -15, rotY: Math.PI },
-  { id: 'glasses-05', name: 'Gold Aviator',  modelPath: '/models-3d-all/glasses-05/scene.gltf', preview: '/models-3d-all/glasses-05/glasses_05.png', scaleFactor: 2.6, yOffset: -10, rotY: Math.PI },
-  { id: 'glasses-06', name: 'Purple Style',  modelPath: '/models-3d-all/glasses-06/scene.gltf', preview: '/models-3d-all/glasses-06/glasses_06.png', scaleFactor: 2.4, yOffset: -15, rotY: Math.PI },
-  { id: 'glasses-07', name: 'Round Wire',    modelPath: '/models-3d-all/glasses-07/scene.gltf', preview: '/models-3d-all/glasses-07/glasses_07.png', scaleFactor: 2.7, yOffset: -25, rotY: Math.PI },
+  { id: 'glasses-01', name: 'Solene Sport',     modelPath: '/models-3d-all/glasses-01/scene.gltf', preview: '/models-3d-all/glasses-01/glasses_01.png', scaleFactor: 2.6, yOffset: -10, rotY: 0 },
+  { id: 'glasses-02', name: 'Onyx Noir',        modelPath: '/models-3d-all/glasses-02/scene.gltf', preview: '/models-3d-all/glasses-02/glasses_02.png', scaleFactor: 2.6, yOffset: -20, rotY: Math.PI },
+  { id: 'glasses-03', name: 'Azure Riviera',    modelPath: '/models-3d-all/glasses-03/scene.gltf', preview: '/models-3d-all/glasses-03/glasses_03.png', scaleFactor: 2.6, yOffset: -18, rotY: Math.PI },
+  { id: 'glasses-04', name: 'Crimson Soirée',   modelPath: '/models-3d-all/glasses-04/scene.gltf', preview: '/models-3d-all/glasses-04/glasses_04.png', scaleFactor: 2.6, yOffset: -15, rotY: Math.PI },
+  { id: 'glasses-05', name: 'Maison Gold',      modelPath: '/models-3d-all/glasses-05/scene.gltf', preview: '/models-3d-all/glasses-05/glasses_05.png', scaleFactor: 2.6, yOffset: -10, rotY: Math.PI },
+  { id: 'glasses-06', name: 'Amethyst Nuit',    modelPath: '/models-3d-all/glasses-06/scene.gltf', preview: '/models-3d-all/glasses-06/glasses_06.png', scaleFactor: 2.4, yOffset: -15, rotY: Math.PI },
+  { id: 'glasses-07', name: 'Wirecraft Round',  modelPath: '/models-3d-all/glasses-07/scene.gltf', preview: '/models-3d-all/glasses-07/glasses_07.png', scaleFactor: 2.7, yOffset: -25, rotY: Math.PI },
 ];
 
 export default function ARTryOn3D() {
@@ -407,55 +407,65 @@ export default function ARTryOn3D() {
   );
 
   return (
-    <div className="min-h-screen pt-24 pb-20 gradient-bg">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <div className="min-h-screen pt-20 pb-20 relative overflow-hidden">
+      {/* Layered ambient background */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-background via-secondary/30 to-background" />
+      <div className="absolute -z-10 top-32 -left-24 w-[28rem] h-[28rem] rounded-full bg-primary/8 blur-[140px]" />
+      <div className="absolute -z-10 top-1/2 -right-24 w-[24rem] h-[24rem] rounded-full bg-accent/10 blur-[140px]" />
+
+      <div className="container mx-auto px-4 max-w-7xl">
         {/* Editorial header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <div className="inline-flex items-center gap-3 mb-5">
-            <span className="h-px w-10 bg-primary/40" />
-            <span className="text-[11px] tracking-[0.35em] uppercase text-primary font-medium">Virtual Atelier</span>
-            <span className="h-px w-10 bg-primary/40" />
+            <span className="h-px w-12 bg-primary/40" />
+            <span className="text-[11px] tracking-[0.4em] uppercase text-primary font-semibold">Virtual Atelier</span>
+            <span className="h-px w-12 bg-primary/40" />
           </div>
-          <h1 className="font-display text-4xl sm:text-6xl font-bold text-foreground mb-4 leading-tight">
-            Try On With <span className="gradient-text italic">FitLens</span>
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-4 leading-[1.1]">
+            Step Into the <span className="gradient-text italic">Fitting Room</span>
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Step into our virtual atelier — fit luxury eyewear in real time using your camera, with precision 3D rendering.
+            Choose a frame, allow your camera, and see luxury eyewear come to life on your face — rendered in real-time 3D.
           </p>
         </div>
 
         {error && (
-          <Card className="p-4 mb-6 border-destructive/30 bg-destructive/5 rounded-2xl">
+          <Card className="p-4 mb-6 border-destructive/30 bg-destructive/5 rounded-2xl max-w-2xl mx-auto">
             <p className="text-destructive text-center text-sm">{error}</p>
           </Card>
         )}
 
-        {/* Status bar */}
-        <Card className="px-5 py-4 mb-8 glass-card rounded-2xl">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <StatusDot ok={isModelLoaded} label={`Engine ${isModelLoaded ? 'Ready' : 'Loading…'}`} />
-            <StatusDot ok={debug.faceDetected} label={`Face ${debug.faceDetected ? 'Detected' : 'Searching…'}`} />
-            <StatusDot ok={debug.drawingActive} label={`3D Render ${debug.drawingActive ? 'Active' : 'Waiting…'}`} />
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Camera stage */}
-          <div className="lg:col-span-3">
-            <Card className="p-5 sm:p-6 glass-card rounded-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-[10px] tracking-[0.3em] uppercase text-primary/80 mb-1">Live Preview</p>
-                  <h2 className="font-display text-lg font-semibold text-foreground">{selectedGlasses.name}</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          {/* ─── Camera stage ─── */}
+          <div className="lg:col-span-8 space-y-5">
+            <Card className="overflow-hidden glass-card rounded-3xl border border-warm-border/60">
+              {/* Stage header bar */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-warm-border/60 bg-gradient-to-r from-card to-secondary/40">
+                <div className="flex items-center gap-3">
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary/60" />
+                  <div>
+                    <p className="text-[10px] tracking-[0.3em] uppercase text-primary/80">Now Fitting</p>
+                    <h2 className="font-display text-base font-semibold text-foreground leading-tight">{selectedGlasses.name}</h2>
+                  </div>
                 </div>
-                {isStreaming && (
-                  <span className="inline-flex items-center gap-1.5 text-[10px] tracking-wider uppercase text-accent font-medium">
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> Recording
-                  </span>
-                )}
+                <div className="flex items-center gap-4">
+                  <div className="hidden sm:flex items-center gap-3">
+                    <StatusDot ok={isModelLoaded} label="Engine" />
+                    <span className="h-3 w-px bg-border" />
+                    <StatusDot ok={debug.faceDetected} label="Face" />
+                    <span className="h-3 w-px bg-border" />
+                    <StatusDot ok={debug.drawingActive} label="3D" />
+                  </div>
+                  {isStreaming && (
+                    <span className="inline-flex items-center gap-1.5 text-[10px] tracking-wider uppercase text-accent font-semibold px-2.5 py-1 rounded-full bg-accent/10 border border-accent/30">
+                      <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> Live
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <div className="relative aspect-video bg-secondary rounded-xl overflow-hidden ring-1 ring-warm-border">
+              {/* Camera viewport */}
+              <div className="relative aspect-video bg-gradient-to-br from-secondary via-muted to-secondary overflow-hidden">
                 <video
                   ref={videoRef}
                   className="absolute inset-0 w-full h-full object-cover"
@@ -474,26 +484,38 @@ export default function ARTryOn3D() {
                   style={{ display: isStreaming ? 'block' : 'none' }}
                 />
 
-                {/* Decorative corner frames */}
-                <div className="pointer-events-none absolute inset-3 border border-primary/20 rounded-lg" />
-                <div className="pointer-events-none absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-primary/70 rounded-tl-lg" />
-                <div className="pointer-events-none absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-primary/70 rounded-tr-lg" />
-                <div className="pointer-events-none absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-primary/70 rounded-bl-lg" />
-                <div className="pointer-events-none absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-primary/70 rounded-br-lg" />
+                {/* Editorial corner brackets */}
+                <div className="pointer-events-none absolute top-4 left-4 w-8 h-8 border-t border-l border-primary/60" />
+                <div className="pointer-events-none absolute top-4 right-4 w-8 h-8 border-t border-r border-primary/60" />
+                <div className="pointer-events-none absolute bottom-4 left-4 w-8 h-8 border-b border-l border-primary/60" />
+                <div className="pointer-events-none absolute bottom-4 right-4 w-8 h-8 border-b border-r border-primary/60" />
+
+                {/* Center crosshair when streaming */}
+                {isStreaming && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-30">
+                    <div className="h-px w-16 bg-primary/50" />
+                    <div className="absolute h-16 w-px bg-primary/50" />
+                  </div>
+                )}
 
                 {!isStreaming && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
-                    <div className="text-center px-6">
-                      <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                        <Camera className="w-9 h-9 text-primary" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center px-6 max-w-sm">
+                      <div className="relative w-24 h-24 mx-auto mb-6">
+                        <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+                        <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-accent/15 border border-primary/30 flex items-center justify-center">
+                          <Camera className="w-10 h-10 text-primary" />
+                        </div>
                       </div>
-                      <p className="font-display text-lg text-foreground mb-1">Ready when you are</p>
-                      <p className="text-sm text-muted-foreground mb-5">Allow camera access to begin your fitting</p>
-                      <Button onClick={startWebcam} disabled={!isModelLoaded} size="lg" className="glow-warm">
+                      <p className="font-display text-xl text-foreground mb-2">Your fitting awaits</p>
+                      <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                        Allow camera access and we'll place {selectedGlasses.name} on your face in real time.
+                      </p>
+                      <Button onClick={startWebcam} disabled={!isModelLoaded} size="lg" className="glow-warm rounded-xl">
                         {!isModelLoaded ? (
-                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Preparing…</>
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Preparing atelier…</>
                         ) : (
-                          <><Camera className="mr-2 h-4 w-4" /> Start Camera</>
+                          <><Camera className="mr-2 h-4 w-4" /> Begin Fitting</>
                         )}
                       </Button>
                     </div>
@@ -501,77 +523,87 @@ export default function ARTryOn3D() {
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-3 mt-5">
+              {/* Action toolbar */}
+              <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-t border-warm-border/60 bg-gradient-to-r from-card to-secondary/30">
                 <Button
                   onClick={isStreaming ? stopWebcam : startWebcam}
                   disabled={!isModelLoaded}
                   variant={isStreaming ? 'destructive' : 'default'}
-                  className="flex-1 min-w-[140px] rounded-xl"
+                  className="rounded-xl flex-1 sm:flex-none sm:min-w-[160px]"
                 >
                   {isStreaming ? 'Stop Camera' : 'Start Camera'}
                 </Button>
-                <Button onClick={captureScreenshot} disabled={!isStreaming} variant="outline" className="flex-1 min-w-[140px] rounded-xl">
+                <Button onClick={captureScreenshot} disabled={!isStreaming} variant="outline" className="rounded-xl flex-1 sm:flex-none sm:min-w-[140px]">
                   <Upload className="mr-2 h-4 w-4" /> Capture
                 </Button>
-                <Button onClick={() => window.location.reload()} variant="outline" size="icon" className="rounded-xl">
+                <Button onClick={() => window.location.reload()} variant="ghost" size="icon" className="rounded-xl ml-auto">
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
             </Card>
+
+            {/* Mobile status bar */}
+            <Card className="sm:hidden p-4 glass-card rounded-2xl">
+              <div className="grid grid-cols-3 gap-2">
+                <StatusDot ok={isModelLoaded} label="Engine" />
+                <StatusDot ok={debug.faceDetected} label="Face" />
+                <StatusDot ok={debug.drawingActive} label="3D" />
+              </div>
+            </Card>
           </div>
 
-          {/* Selector */}
-          <div className="lg:col-span-2">
-            <Card className="p-5 sm:p-6 glass-card rounded-2xl">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <p className="text-[10px] tracking-[0.3em] uppercase text-primary/80 mb-1">The Collection</p>
-                  <h2 className="font-display text-xl font-semibold text-foreground">Select Eyewear</h2>
+          {/* ─── Frame selector ─── */}
+          <div className="lg:col-span-4">
+            <Card className="glass-card rounded-3xl border border-warm-border/60 overflow-hidden">
+              <div className="px-5 py-4 border-b border-warm-border/60 bg-gradient-to-br from-primary/8 to-accent/5">
+                <p className="text-[10px] tracking-[0.3em] uppercase text-primary/80 mb-1">The Atelier</p>
+                <div className="flex items-end justify-between">
+                  <h2 className="font-display text-xl font-semibold text-foreground">Choose Your Frame</h2>
+                  <span className="text-[10px] tracking-widest uppercase text-muted-foreground">{glassesOptions.length} pieces</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{glassesOptions.length} pieces</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1">
+              <div className="p-4 grid grid-cols-2 gap-3 max-h-[520px] overflow-y-auto">
                 {glassesOptions.map((glasses) => {
                   const active = selectedGlasses.id === glasses.id;
                   return (
                     <button
                       key={glasses.id}
                       onClick={() => setSelectedGlasses(glasses)}
-                      className={`group relative p-3 rounded-xl transition-all duration-300 text-left ${
+                      className={`group relative p-3 rounded-2xl text-left transition-all duration-300 ${
                         active
-                          ? 'bg-gradient-to-br from-primary/10 to-accent/5 ring-2 ring-primary shadow-md'
-                          : 'bg-card ring-1 ring-warm-border hover:ring-primary/40 hover:-translate-y-0.5'
+                          ? 'bg-gradient-to-br from-primary/12 to-accent/8 ring-2 ring-primary shadow-lg shadow-primary/10'
+                          : 'bg-card ring-1 ring-warm-border/70 hover:ring-primary/40 hover:-translate-y-0.5 hover:shadow-md'
                       }`}
                     >
                       {active && (
-                        <span className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground">
+                        <span className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground shadow">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                         </span>
                       )}
-                      <div className="aspect-square bg-gradient-to-br from-secondary to-muted/60 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                      <div className="aspect-square bg-gradient-to-br from-secondary via-muted/60 to-secondary rounded-xl mb-3 flex items-center justify-center overflow-hidden">
                         <img
                           src={glasses.preview}
                           alt={glasses.name}
-                          className="max-w-[88%] max-h-[88%] object-contain transition-transform duration-300 group-hover:scale-105"
+                          className="max-w-[88%] max-h-[88%] object-contain transition-transform duration-500 group-hover:scale-110"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
                       </div>
-                      <p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-0.5">Frame</p>
+                      <p className="text-[9px] tracking-[0.25em] uppercase text-muted-foreground mb-0.5">Frame</p>
                       <p className="font-display text-sm font-semibold text-foreground leading-tight">{glasses.name}</p>
                     </button>
                   );
                 })}
               </div>
 
-              <div className="mt-6 p-5 rounded-xl bg-gradient-to-br from-primary/8 to-accent/5 border border-primary/15">
-                <p className="text-[10px] tracking-[0.3em] uppercase text-primary mb-2">Atelier Notes</p>
+              <div className="px-5 py-5 border-t border-warm-border/60 bg-gradient-to-br from-secondary/40 to-card">
+                <p className="text-[10px] tracking-[0.3em] uppercase text-primary mb-3">Atelier Notes</p>
                 <ul className="text-xs text-muted-foreground space-y-2 leading-relaxed">
                   <li className="flex gap-2"><span className="text-primary">—</span> Photorealistic 3D rendering</li>
-                  <li className="flex gap-2"><span className="text-primary">—</span> Rotates naturally with your head</li>
-                  <li className="flex gap-2"><span className="text-primary">—</span> Auto-fit to facial proportions</li>
-                  <li className="flex gap-2"><span className="text-primary">—</span> Studio lighting simulation</li>
-                  <li className="flex gap-2"><span className="text-primary">—</span> Capture & save your look</li>
+                  <li className="flex gap-2"><span className="text-primary">—</span> Tracks head rotation naturally</li>
+                  <li className="flex gap-2"><span className="text-primary">—</span> Auto-fits to your facial proportions</li>
+                  <li className="flex gap-2"><span className="text-primary">—</span> Studio-grade lighting simulation</li>
+                  <li className="flex gap-2"><span className="text-primary">—</span> Capture & save your fitting</li>
                 </ul>
               </div>
             </Card>
