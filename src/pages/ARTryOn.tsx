@@ -176,6 +176,25 @@ export default function ARTryOn() {
             y: (mirroredLeft.y + mirroredRight.y) / 2,
           };
 
+          // FORCE DRAW IN CENTER - TEST
+          const testCenterX = canvas.width / 2;
+          const testCenterY = canvas.height / 2;
+          ctx.fillStyle = 'red';
+          ctx.beginPath();
+          ctx.arc(testCenterX, testCenterY, 50, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 40px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('CENTER', testCenterX, testCenterY + 10);
+          ctx.fillStyle = 'rgba(255, 255, 0, 0.9)';
+          ctx.fillRect(testCenterX - 150, testCenterY - 200, 300, 100);
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 8;
+          ctx.strokeRect(testCenterX - 150, testCenterY - 200, 300, 100);
+          ctx.fillStyle = 'black';
+          ctx.fillText('GLASSES HERE', testCenterX, testCenterY - 140);
+
           // RED DOTS on eyes - MASSIVE SIZE
           ctx.fillStyle = 'red';
           ctx.beginPath();
