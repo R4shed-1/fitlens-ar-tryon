@@ -179,9 +179,9 @@ export default function ARTryOn() {
             y: rightEyePoints.reduce((s, p) => s + p.y, 0) / rightEyePoints.length,
           };
 
-          // Mirror X because video is CSS-mirrored via scaleX(-1)
-          const leftEye = { x: displayWidth - leftEyeCenter.x, y: leftEyeCenter.y };
-          const rightEye = { x: displayWidth - rightEyeCenter.x, y: rightEyeCenter.y };
+          // TEMP DEBUG: no manual mirroring — use raw resized coords
+          const leftEye = { x: leftEyeCenter.x, y: leftEyeCenter.y };
+          const rightEye = { x: rightEyeCenter.x, y: rightEyeCenter.y };
 
           const centerPoint = {
             x: (leftEye.x + rightEye.x) / 2,
