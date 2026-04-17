@@ -138,6 +138,13 @@ export default function ARTryOn() {
         .withFaceLandmarks();
 
       if (detections) {
+        // SIMPLE TEST: confirm canvas drawing works
+        ctx.fillStyle = 'red';
+        ctx.fillRect(100, 100, 200, 100);
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 30px Arial';
+        ctx.fillText('TEST OVERLAY', 120, 160);
+
         console.log('✅ FACE DETECTED');
         const landmarks = detections.landmarks;
         const leftEyePoints = landmarks.getLeftEye();
