@@ -152,7 +152,10 @@ const Index = () => (
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.slice(0, 6).map((product) => (
+          {[
+            ...products.filter((p) => p.id.startsWith("ar-")).slice(0, 3),
+            ...products.filter((p) => !p.id.startsWith("ar-")).slice(0, 3),
+          ].map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
@@ -161,6 +164,52 @@ const Index = () => (
           <Link to="/products" className="text-primary text-sm font-medium">
             View All Products →
           </Link>
+        </div>
+      </div>
+    </section>
+
+    {/* Testimonials */}
+    <section className="py-24 relative">
+      <div className="container mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-14"
+        >
+          <div className="inline-flex items-center gap-3 mb-4">
+            <span className="h-px w-10 bg-primary/40" />
+            <span className="text-[11px] tracking-[0.4em] uppercase text-primary font-semibold">Loved across the Gulf</span>
+            <span className="h-px w-10 bg-primary/40" />
+          </div>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground">
+            Stories from our <span className="gradient-text italic">clients</span>
+          </h2>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {testimonials.map((t, i) => (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.12 }}
+              className="glass-card rounded-2xl p-7 relative hover:-translate-y-1 transition-transform duration-300"
+            >
+              <Quote className="h-8 w-8 text-primary/30 mb-3" />
+              <div className="flex gap-0.5 mb-4">
+                {Array.from({ length: t.rating }).map((_, idx) => (
+                  <Star key={idx} className="h-3.5 w-3.5 fill-primary text-primary" />
+                ))}
+              </div>
+              <p className="text-foreground/85 leading-relaxed mb-5 italic">"{t.text}"</p>
+              <div className="pt-4 border-t border-warm-border/60">
+                <p className="font-display font-semibold text-foreground">{t.name}</p>
+                <p className="text-xs text-muted-foreground tracking-wider uppercase">{t.city}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
