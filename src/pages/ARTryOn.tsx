@@ -532,13 +532,21 @@ export default function ARTryOn3DUltimate() {
   );
 
   return (
-    <div className="min-h-screen pt-24 pb-16 bg-background">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <div className="min-h-screen pt-24 pb-16 bg-background relative overflow-hidden">
+      <div className="absolute top-20 -left-20 w-96 h-96 bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 -right-20 w-96 h-96 bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="container mx-auto px-4 max-w-6xl relative">
         <div className="text-center mb-10">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium tracking-wide mb-4">
+            <Sparkles className="h-3 w-3" /> Real-time 3D Try-On
+          </span>
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-foreground mb-3">
-            <span className="gradient-text">FitLens</span> Ultimate 3D AR
+            <span className="gradient-text italic">FitLens</span> Virtual Atelier
           </h1>
-          <p className="text-muted-foreground">Advanced 3D face tracking with head pose estimation</p>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Step in front of the camera and discover how each frame complements your features — in real time, in 3D.
+          </p>
         </div>
 
         {error && (
@@ -658,25 +666,18 @@ export default function ARTryOn3DUltimate() {
                 ))}
               </div>
 
-              <div className="mt-6 p-4 bg-primary/5 border border-primary/15 rounded-xl">
-                <h3 className="font-display font-semibold text-sm mb-2 text-foreground">🚀 Ultimate Features</h3>
-                <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>✨ 7 realistic 3D models</li>
-                  <li>🔄 Full head pose tracking</li>
-                  <li>📏 Depth perception (Z-axis)</li>
-                  <li>🌐 468-point face mesh</li>
-                  <li>💡 Realistic shadows</li>
-                  <li>🎯 Pitch/Yaw/Roll rotation</li>
-                  <li>📸 HD screenshots</li>
+              <div className="mt-6 p-4 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/15 rounded-xl">
+                <h3 className="font-display font-semibold text-sm mb-3 text-foreground flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" /> Atelier Features
+                </h3>
+                <ul className="text-xs text-muted-foreground space-y-1.5">
+                  <li>· 7 hand-crafted 3D frames</li>
+                  <li>· Full head pose tracking</li>
+                  <li>· True depth perception</li>
+                  <li>· 468-point face mapping</li>
+                  <li>· Cinematic lighting & shadows</li>
+                  <li>· HD capture & share</li>
                 </ul>
-                <div className="mt-3 pt-3 border-t border-border/50">
-                  <p className="text-xs text-muted-foreground flex items-center gap-2">
-                    <Grid3x3 className="h-3 w-3" /> Face mesh overlay
-                  </p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                    <Eye className="h-3 w-3" /> Depth tracking
-                  </p>
-                </div>
               </div>
             </Card>
           </div>
@@ -685,3 +686,4 @@ export default function ARTryOn3DUltimate() {
     </div>
   );
 }
+
