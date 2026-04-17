@@ -41,7 +41,7 @@ export default function ARTryOn() {
     const loadModels = async () => {
       try {
         // Local models from /public/models for reliability
-        const MODEL_URL = '/models';
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
           faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
