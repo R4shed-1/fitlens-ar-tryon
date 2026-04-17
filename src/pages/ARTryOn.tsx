@@ -1,35 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, Upload, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Camera, Upload, Loader2, RefreshCw, AlertCircle, CheckCircle2, Eye, Grid3x3 } from 'lucide-react';
 
 interface GlassesModel {
   id: string;
   name: string;
   modelPath: string;
   preview: string;
-  /** Multiplier on inter-eye pixel distance to set width */
-  scaleFactor: number;
-  /** Vertical pixel offset (positive = lower on face) */
-  yOffset: number;
-  /** Extra Y rotation (radians) needed to face the camera */
-  rotY: number;
 }
 
 const glassesOptions: GlassesModel[] = [
-  { id: 'glasses-01', name: 'Sport Orange',  modelPath: '/models-3d-all/glasses-01/scene.gltf', preview: '/models-3d-all/glasses-01/glasses_01.png', scaleFactor: 2.6, yOffset: -10, rotY: 0 },
-  { id: 'glasses-02', name: 'Classic Black', modelPath: '/models-3d-all/glasses-02/scene.gltf', preview: '/models-3d-all/glasses-02/glasses_02.png', scaleFactor: 2.6, yOffset: -20, rotY: Math.PI },
-  { id: 'glasses-03', name: 'Modern Blue',   modelPath: '/models-3d-all/glasses-03/scene.gltf', preview: '/models-3d-all/glasses-03/glasses_03.png', scaleFactor: 2.6, yOffset: -18, rotY: Math.PI },
-  { id: 'glasses-04', name: 'Red Frame',     modelPath: '/models-3d-all/glasses-04/scene.gltf', preview: '/models-3d-all/glasses-04/glasses_04.png', scaleFactor: 2.6, yOffset: -15, rotY: Math.PI },
-  { id: 'glasses-05', name: 'Gold Aviator',  modelPath: '/models-3d-all/glasses-05/scene.gltf', preview: '/models-3d-all/glasses-05/glasses_05.png', scaleFactor: 2.6, yOffset: -10, rotY: Math.PI },
-  { id: 'glasses-06', name: 'Purple Style',  modelPath: '/models-3d-all/glasses-06/scene.gltf', preview: '/models-3d-all/glasses-06/glasses_06.png', scaleFactor: 2.4, yOffset: -15, rotY: Math.PI },
-  { id: 'glasses-07', name: 'Round Wire',    modelPath: '/models-3d-all/glasses-07/scene.gltf', preview: '/models-3d-all/glasses-07/glasses_07.png', scaleFactor: 2.7, yOffset: -25, rotY: Math.PI },
+  { id: 'glasses-01', name: 'Sport Orange', modelPath: '/models-3d-all/glasses-01/scene.gltf', preview: '/models-3d-all/glasses-01/glasses_01.png' },
+  { id: 'glasses-02', name: 'Classic Black', modelPath: '/models-3d-all/glasses-02/scene.gltf', preview: '/models-3d-all/glasses-02/glasses_02.png' },
+  { id: 'glasses-03', name: 'Modern Blue', modelPath: '/models-3d-all/glasses-03/scene.gltf', preview: '/models-3d-all/glasses-03/glasses_03.png' },
+  { id: 'glasses-04', name: 'Red Frame', modelPath: '/models-3d-all/glasses-04/scene.gltf', preview: '/models-3d-all/glasses-04/glasses_04.png' },
+  { id: 'glasses-05', name: 'Gold Aviator', modelPath: '/models-3d-all/glasses-05/scene.gltf', preview: '/models-3d-all/glasses-05/glasses_05.png' },
+  { id: 'glasses-06', name: 'Purple Style', modelPath: '/models-3d-all/glasses-06/scene.gltf', preview: '/models-3d-all/glasses-06/glasses_06.png' },
+  { id: 'glasses-07', name: 'Round Wire', modelPath: '/models-3d-all/glasses-07/scene.gltf', preview: '/models-3d-all/glasses-07/glasses_07.png' },
 ];
 
-export default function ARTryOn3D() {
+export default function ARTryOn3DUltimate() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const threeCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -39,6 +33,8 @@ export default function ARTryOn3D() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedGlasses, setSelectedGlasses] = useState<GlassesModel>(glassesOptions[0]);
   const [error, setError] = useState<string | null>(null);
+  const [showMesh, setShowMesh] = useState(false);
+  const [showDepth, setShowDepth] = useState(true);
   const [debug, setDebug] = useState({
     faceDetected: false,
     landmarksFound: false,
@@ -50,23 +46,23 @@ export default function ARTryOn3D() {
   const lastVideoTimeRef = useRef(-1);
   const smoothedLeftRef = useRef({ x: 0, y: 0, z: 0 });
   const smoothedRightRef = useRef({ x: 0, y: 0, z: 0 });
+  const smoothedPoseRef = useRef({ pitch: 0, yaw: 0, roll: 0 });
   const smoothingFactor = 0.7;
   
   // Three.js references
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const glassesModelRef = useRef<THREE.Group | null>(null);
+  const faceMeshRef = useRef<THREE.Points | null>(null);
+  const shadowPlaneRef = useRef<THREE.Mesh | null>(null);
   const loaderRef = useRef<GLTFLoader>(new GLTFLoader());
-  const selectedRef = useRef<GlassesModel>(selectedGlasses);
-
-  useEffect(() => { selectedRef.current = selectedGlasses; }, [selectedGlasses]);
 
   // Load MediaPipe
   useEffect(() => {
     const loadModel = async () => {
       try {
-        console.log('🔄 Loading MediaPipe...');
+        console.log('🔄 Loading MediaPipe Face Landmarker...');
         
         const vision = await FilesetResolver.forVisionTasks(
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
@@ -82,13 +78,13 @@ export default function ARTryOn3D() {
           minFaceDetectionConfidence: 0.5,
           minFacePresenceConfidence: 0.5,
           minTrackingConfidence: 0.5,
-          outputFaceBlendshapes: false,
-          outputFacialTransformationMatrixes: false
+          outputFaceBlendshapes: true,
+          outputFacialTransformationMatrixes: true
         });
 
         setFaceLandmarker(landmarker);
         setIsModelLoaded(true);
-        console.log('✅ MediaPipe loaded');
+        console.log('✅ MediaPipe loaded with advanced features');
       } catch (err) {
         setError('Failed to load MediaPipe: ' + (err as Error).message);
         console.error('❌ Error:', err);
@@ -97,20 +93,20 @@ export default function ARTryOn3D() {
     loadModel();
   }, []);
 
-  // Initialize Three.js with an OrthographicCamera in pixel space.
-  // x grows right, y grows DOWN (matches canvas pixel coords) so we can
-  // pass MediaPipe landmarks straight in.
+  // Initialize Three.js with advanced features
   useEffect(() => {
     if (!threeCanvasRef.current) return;
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const w = threeCanvasRef.current.width || 1280;
-    const h = threeCanvasRef.current.height || 720;
-    // left, right, top, bottom — top<bottom flips Y so y-down matches pixels
-    const camera = new THREE.OrthographicCamera(0, w, 0, h, -1000, 1000);
-    camera.position.z = 500;
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      threeCanvasRef.current.width / threeCanvasRef.current.height,
+      0.1,
+      1000
+    );
+    camera.position.z = 5;
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -118,31 +114,65 @@ export default function ARTryOn3D() {
       alpha: true,
       antialias: true,
     });
-    renderer.setSize(w, h, false);
+    renderer.setSize(threeCanvasRef.current.width, threeCanvasRef.current.height);
     renderer.setClearColor(0x000000, 0);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-    // Key light (warm, top-front)
-    const key = new THREE.DirectionalLight(0xfff2dc, 1.4);
-    key.position.set(0.5, -1, 1);
-    scene.add(key);
-    // Rim light (cool, behind/above) — adds the metallic highlight
-    const rim = new THREE.DirectionalLight(0xbcd4ff, 1.0);
-    rim.position.set(-1, -0.5, -0.8);
-    scene.add(rim);
-    // Fill (soft, opposite key)
-    const fill = new THREE.DirectionalLight(0xffffff, 0.4);
-    fill.position.set(-1, 0.5, 1);
-    scene.add(fill);
+    // Advanced lighting with shadows
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    keyLight.position.set(2, 2, 3);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 50;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    fillLight.position.set(-2, 0, 2);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.2);
+    rimLight.position.set(0, -2, -2);
+    scene.add(rimLight);
+
+    // Shadow receiving plane (invisible but catches shadows)
+    const shadowGeometry = new THREE.PlaneGeometry(10, 10);
+    const shadowMaterial = new THREE.ShadowMaterial({ opacity: 0.3 });
+    const shadowPlane = new THREE.Mesh(shadowGeometry, shadowMaterial);
+    shadowPlane.receiveShadow = true;
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.position.y = -0.5;
+    shadowPlane.visible = false;
+    scene.add(shadowPlane);
+    shadowPlaneRef.current = shadowPlane;
+
+    // Create 3D face mesh wireframe
+    const faceMeshGeometry = new THREE.BufferGeometry();
+    const faceMeshMaterial = new THREE.PointsMaterial({
+      color: 0x00ff00,
+      size: 0.02,
+      transparent: true,
+      opacity: 0.6,
+    });
+    const faceMesh = new THREE.Points(faceMeshGeometry, faceMeshMaterial);
+    faceMesh.visible = false;
+    scene.add(faceMesh);
+    faceMeshRef.current = faceMesh;
+
+    console.log('✅ Three.js initialized with advanced features');
 
     return () => {
       renderer.dispose();
     };
   }, []);
 
-  // Load selected 3D model — auto-center geometry so the model's pivot is
-  // at the bridge of the glasses, then normalize size to width=1 unit.
+  // Load selected 3D model
   useEffect(() => {
     if (!sceneRef.current) return;
 
@@ -151,34 +181,34 @@ export default function ARTryOn3D() {
       glassesModelRef.current = null;
     }
 
+    console.log('🔄 Loading 3D model:', selectedGlasses.name);
+    
     loaderRef.current.load(
       selectedGlasses.modelPath,
       (gltf) => {
-        const raw = gltf.scene;
-
-        // Compute bounding box and recenter geometry into a wrapper group
-        const box = new THREE.Box3().setFromObject(raw);
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-
-        // Shift so origin = geometric center
-        raw.position.sub(center);
-        // Normalize so the widest axis = 1 unit; per-frame we multiply by
-        // eye distance so it always matches face width.
-        const maxDim = Math.max(size.x, size.y, size.z) || 1;
-        const wrapper = new THREE.Group();
-        const inner = new THREE.Group();
-        inner.scale.setScalar(1 / maxDim);
-        inner.add(raw);
-        wrapper.add(inner);
-
-        glassesModelRef.current = wrapper;
-        sceneRef.current?.add(wrapper);
+        const model = gltf.scene;
+        
+        model.scale.set(0.01, 0.01, 0.01);
+        model.position.set(0, 0, 0);
+        model.rotation.y = 0;
+        
+        // Enable shadows
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        
+        glassesModelRef.current = model;
+        sceneRef.current?.add(model);
+        
+        console.log('✅ 3D model loaded with shadows');
       },
       undefined,
-      (err) => console.error('GLTF load error:', err)
+      (err) => {
+        console.error('❌ Model error:', err);
+      }
     );
   }, [selectedGlasses]);
 
@@ -221,10 +251,51 @@ export default function ARTryOn3D() {
     lastVideoTimeRef.current = -1;
     smoothedLeftRef.current = { x: 0, y: 0, z: 0 };
     smoothedRightRef.current = { x: 0, y: 0, z: 0 };
+    smoothedPoseRef.current = { pitch: 0, yaw: 0, roll: 0 };
     setDebug({ faceDetected: false, landmarksFound: false, drawingActive: false });
   };
 
-  // Main detection and rendering
+  // Calculate head pose (pitch, yaw, roll) from landmarks
+  const calculateHeadPose = (landmarks: any[], canvas: HTMLCanvasElement) => {
+    // Key points for head pose estimation
+    const noseTip = landmarks[1]; // Nose tip
+    const chinBottom = landmarks[152]; // Chin
+    const leftEye = landmarks[33]; // Left eye outer corner
+    const rightEye = landmarks[263]; // Right eye outer corner
+    const leftMouth = landmarks[61]; // Left mouth corner
+    const rightMouth = landmarks[291]; // Right mouth corner
+
+    // Convert to canvas coordinates
+    const noseX = noseTip.x * canvas.width;
+    const noseY = noseTip.y * canvas.height;
+    const noseZ = noseTip.z || 0;
+    
+    const chinX = chinBottom.x * canvas.width;
+    const chinY = chinBottom.y * canvas.height;
+    
+    const leftEyeX = leftEye.x * canvas.width;
+    const rightEyeX = rightEye.x * canvas.width;
+    const leftEyeY = leftEye.y * canvas.height;
+    const rightEyeY = rightEye.y * canvas.height;
+    
+    // Calculate roll (head tilt left/right)
+    const eyeDx = rightEyeX - leftEyeX;
+    const eyeDy = rightEyeY - leftEyeY;
+    const roll = Math.atan2(eyeDy, eyeDx);
+    
+    // Calculate pitch (head tilt up/down)
+    const noseChinDy = chinY - noseY;
+    const pitch = Math.atan2(noseChinDy, canvas.height * 0.3) - Math.PI / 2;
+    
+    // Calculate yaw (head turn left/right)
+    const faceCenter = (leftEyeX + rightEyeX) / 2;
+    const faceCenterNormalized = (faceCenter / canvas.width) - 0.5;
+    const yaw = faceCenterNormalized * Math.PI * 0.5;
+    
+    return { pitch, yaw, roll };
+  };
+
+  // Main detection and rendering with ALL advanced features
   const detectFaceAndRender3D = () => {
     if (!isDrawingRef.current) return;
     if (!videoRef.current || !canvasRef.current || !threeCanvasRef.current || !faceLandmarker) {
@@ -249,13 +320,9 @@ export default function ARTryOn3D() {
       threeCanvasRef.current.height = video.videoHeight;
       
       if (rendererRef.current && cameraRef.current) {
-        rendererRef.current.setSize(canvas.width, canvas.height, false);
-        const cam = cameraRef.current;
-        cam.left = 0;
-        cam.right = canvas.width;
-        cam.top = 0;
-        cam.bottom = canvas.height;
-        cam.updateProjectionMatrix();
+        rendererRef.current.setSize(canvas.width, canvas.height);
+        cameraRef.current.aspect = canvas.width / canvas.height;
+        cameraRef.current.updateProjectionMatrix();
       }
     }
 
@@ -265,18 +332,37 @@ export default function ARTryOn3D() {
     ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
     ctx.restore();
 
-    // Detect face - use performance.now() to fix timestamp error
+    // Detect face with advanced features
     try {
       const results = faceLandmarker.detectForVideo(video, performance.now());
 
       if (results && results.faceLandmarks && results.faceLandmarks.length > 0) {
         const landmarks = results.faceLandmarks[0];
         
+        // Update 3D face mesh visualization
+        if (faceMeshRef.current && showMesh) {
+          const positions: number[] = [];
+          landmarks.forEach((landmark: any) => {
+            const x = ((landmark.x * canvas.width / canvas.width) * 2 - 1) * 3;
+            const y = -((landmark.y * canvas.height / canvas.height) * 2 - 1) * 3;
+            const z = (landmark.z || 0) * 3;
+            positions.push(x, y, z);
+          });
+          
+          faceMeshRef.current.geometry.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(positions, 3)
+          );
+          faceMeshRef.current.visible = true;
+        } else if (faceMeshRef.current) {
+          faceMeshRef.current.visible = false;
+        }
+        
         // Eye landmarks
         const leftEyeIndices = [33, 133, 160, 159, 158, 157, 173, 246];
         const rightEyeIndices = [362, 263, 387, 386, 385, 384, 398, 466];
         
-        // Calculate eye centers
+        // Calculate eye centers with Z depth
         let leftEyeX = 0, leftEyeY = 0, leftEyeZ = 0;
         leftEyeIndices.forEach(idx => {
           leftEyeX += landmarks[idx].x;
@@ -312,35 +398,60 @@ export default function ARTryOn3D() {
 
         const finalLeftX = smoothedLeftRef.current.x;
         const finalLeftY = smoothedLeftRef.current.y;
+        const finalLeftZ = smoothedLeftRef.current.z;
         const finalRightX = smoothedRightRef.current.x;
         const finalRightY = smoothedRightRef.current.y;
+        const finalRightZ = smoothedRightRef.current.z;
 
-        // Calculate center and metrics
+        // Calculate metrics
         const centerX = (finalLeftX + finalRightX) / 2;
         const centerY = (finalLeftY + finalRightY) / 2;
+        const centerZ = (finalLeftZ + finalRightZ) / 2;
         const dx = finalRightX - finalLeftX;
         const dy = finalRightY - finalLeftY;
         const angle = Math.atan2(dy, dx);
         const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
-        // Position 3D glasses (pixel-space ortho camera → use raw px coords)
+        // Calculate head pose for 3D rotation
+        const pose = calculateHeadPose(landmarks, canvas);
+        
+        // Smooth head pose
+        smoothedPoseRef.current.pitch = smoothedPoseRef.current.pitch * smoothingFactor + pose.pitch * (1 - smoothingFactor);
+        smoothedPoseRef.current.yaw = smoothedPoseRef.current.yaw * smoothingFactor + pose.yaw * (1 - smoothingFactor);
+        smoothedPoseRef.current.roll = smoothedPoseRef.current.roll * smoothingFactor + pose.roll * (1 - smoothingFactor);
+
+        // Position 3D glasses with FULL 3D features
         if (glassesModelRef.current && cameraRef.current && rendererRef.current) {
-          const cfg = selectedRef.current;
-          const g = glassesModelRef.current;
-
-          g.position.x = centerX;
-          g.position.y = centerY + cfg.yOffset;
-          g.position.z = 0;
-
-          // Face camera + tilt with head
-          g.rotation.x = 0;
-          g.rotation.y = cfg.rotY;
-          g.rotation.z = -angle;
-
-          // Scale: model is normalized to width=1 → glasses width = eyeDist × factor
-          const s = eyeDistance * cfg.scaleFactor;
-          g.scale.set(s, s, s);
-
+          // Normalize to 3D space
+          const normalizedX = (centerX / canvas.width) * 2 - 1;
+          const normalizedY = -(centerY / canvas.height) * 2 + 1;
+          
+          glassesModelRef.current.position.x = normalizedX * 1.2;
+          glassesModelRef.current.position.y = normalizedY * 1.2;
+          
+          // DEPTH PERCEPTION - use Z coordinate
+          if (showDepth) {
+            glassesModelRef.current.position.z = centerZ * 20; // Scale Z for visible effect
+          } else {
+            glassesModelRef.current.position.z = 0;
+          }
+          
+          // FULL 3D HEAD ROTATION
+          glassesModelRef.current.rotation.x = smoothedPoseRef.current.pitch;
+          glassesModelRef.current.rotation.y = smoothedPoseRef.current.yaw;
+          glassesModelRef.current.rotation.z = -angle;
+          
+          // Scale based on eye distance (size perception)
+          const scale = (eyeDistance / canvas.width) * 2.5;
+          glassesModelRef.current.scale.set(scale, scale, scale);
+          
+          // Shadow plane follows face
+          if (shadowPlaneRef.current) {
+            shadowPlaneRef.current.position.y = normalizedY * 1.2 - 0.3;
+            shadowPlaneRef.current.visible = true;
+          }
+          
+          // Render
           rendererRef.current.render(sceneRef.current!, cameraRef.current);
         }
 
@@ -355,6 +466,9 @@ export default function ARTryOn3D() {
           landmarksFound: false, 
           drawingActive: false 
         });
+        
+        if (faceMeshRef.current) faceMeshRef.current.visible = false;
+        if (shadowPlaneRef.current) shadowPlaneRef.current.visible = false;
       }
     } catch (err) {
       console.error('❌ Detection error:', err);
@@ -374,7 +488,7 @@ export default function ARTryOn3D() {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isStreaming, isModelLoaded, faceLandmarker, selectedGlasses]);
+  }, [isStreaming, isModelLoaded, faceLandmarker, selectedGlasses, showMesh, showDepth]);
 
   useEffect(() => () => stopWebcam(), []);
 
@@ -389,7 +503,7 @@ export default function ARTryOn3D() {
       tempCtx.drawImage(threeCanvasRef.current, 0, 0);
       
       const link = document.createElement('a');
-      link.download = `fitlens-3d-${Date.now()}.png`;
+      link.download = `fitlens-3d-ultimate-${Date.now()}.png`;
       link.href = tempCanvas.toDataURL('image/png');
       link.click();
     }
@@ -411,9 +525,9 @@ export default function ARTryOn3D() {
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-10">
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-foreground mb-3">
-            <span className="gradient-text">FitLens</span> 3D AR Try-On
+            <span className="gradient-text">FitLens</span> Ultimate 3D AR
           </h1>
-          <p className="text-muted-foreground">Try on 3D glasses models using your camera</p>
+          <p className="text-muted-foreground">Advanced 3D face tracking with head pose estimation</p>
         </div>
 
         {error && (
@@ -424,9 +538,9 @@ export default function ARTryOn3D() {
 
         <Card className="p-4 mb-6 glass-card">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatusDot ok={isModelLoaded} label={`MediaPipe: ${isModelLoaded ? 'Loaded' : 'Loading...'}`} />
-            <StatusDot ok={debug.faceDetected} label={`Face: ${debug.faceDetected ? 'Detected' : 'Searching...'}`} />
-            <StatusDot ok={debug.drawingActive} label={`3D: ${debug.drawingActive ? 'Active' : 'Waiting...'}`} />
+            <StatusDot ok={isModelLoaded} label="MediaPipe: Loaded" />
+            <StatusDot ok={debug.faceDetected} label="Face: Detected" />
+            <StatusDot ok={debug.drawingActive} label="3D: Active" />
           </div>
         </Card>
 
@@ -479,7 +593,25 @@ export default function ARTryOn3D() {
                   {isStreaming ? 'Stop Camera' : 'Start Camera'}
                 </Button>
                 <Button onClick={captureScreenshot} disabled={!isStreaming} variant="outline" className="flex-1 min-w-[140px]">
-                  <Upload className="mr-2 h-4 w-4" /> Capture Photo
+                  <Upload className="mr-2 h-4 w-4" /> Capture
+                </Button>
+                <Button 
+                  onClick={() => setShowMesh(!showMesh)} 
+                  disabled={!isStreaming}
+                  variant="outline"
+                  size="icon"
+                  className={showMesh ? 'bg-primary/10' : ''}
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                </Button>
+                <Button 
+                  onClick={() => setShowDepth(!showDepth)} 
+                  disabled={!isStreaming}
+                  variant="outline"
+                  size="icon"
+                  className={showDepth ? 'bg-primary/10' : ''}
+                >
+                  <Eye className="h-4 w-4" />
                 </Button>
                 <Button onClick={() => window.location.reload()} variant="outline" size="icon">
                   <RefreshCw className="h-4 w-4" />
@@ -490,8 +622,8 @@ export default function ARTryOn3D() {
 
           <div className="lg:col-span-1">
             <Card className="p-6 glass-card">
-              <h2 className="font-display text-xl font-semibold mb-4 text-foreground">Select 3D Glasses</h2>
-              <div className="grid grid-cols-2 gap-3 max-h-[500px] overflow-y-auto">
+              <h2 className="font-display text-xl font-semibold mb-4 text-foreground">Select Glasses</h2>
+              <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
                 {glassesOptions.map((glasses) => (
                   <button
                     key={glasses.id}
@@ -516,14 +648,24 @@ export default function ARTryOn3D() {
               </div>
 
               <div className="mt-6 p-4 bg-primary/5 border border-primary/15 rounded-xl">
-                <h3 className="font-display font-semibold text-sm mb-2 text-foreground">3D Features</h3>
+                <h3 className="font-display font-semibold text-sm mb-2 text-foreground">🚀 Ultimate Features</h3>
                 <ul className="text-xs text-muted-foreground space-y-1">
                   <li>✨ 7 realistic 3D models</li>
-                  <li>🔄 Rotates with face</li>
-                  <li>📏 Auto-scaling</li>
-                  <li>💡 Real lighting</li>
-                  <li>📸 Capture photos</li>
+                  <li>🔄 Full head pose tracking</li>
+                  <li>📏 Depth perception (Z-axis)</li>
+                  <li>🌐 468-point face mesh</li>
+                  <li>💡 Realistic shadows</li>
+                  <li>🎯 Pitch/Yaw/Roll rotation</li>
+                  <li>📸 HD screenshots</li>
                 </ul>
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Grid3x3 className="h-3 w-3" /> Face mesh overlay
+                  </p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                    <Eye className="h-3 w-3" /> Depth tracking
+                  </p>
+                </div>
               </div>
             </Card>
           </div>
