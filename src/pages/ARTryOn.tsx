@@ -228,6 +228,16 @@ export default function ARTryOn() {
           ctx.fillText('GLASSES', 0, 10);
           ctx.restore();
 
+          // Show coordinates on screen
+          ctx.fillStyle = 'white';
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 3;
+          ctx.font = 'bold 20px Arial';
+          ctx.textAlign = 'left';
+          const debugText = `L(${Math.round(mirroredLeft.x)},${Math.round(mirroredLeft.y)}) R(${Math.round(mirroredRight.x)},${Math.round(mirroredRight.y)}) C(${Math.round(centerPoint.x)},${Math.round(centerPoint.y)})`;
+          ctx.strokeText(debugText, 10, canvas.height - 30);
+          ctx.fillText(debugText, 10, canvas.height - 30);
+
           // Try to draw actual glasses if loaded
           if (glassesImageRef.current && glassesImageRef.current.complete) {
             ctx.save();
@@ -325,14 +335,19 @@ export default function ARTryOn() {
               <div className="relative aspect-video bg-secondary rounded-xl overflow-hidden">
                 <video
                   ref={videoRef}
-                  className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ display: 'none', zIndex: 1 }}
                   playsInline
                   muted
                 />
                 <canvas
                   ref={canvasRef}
                   className="absolute inset-0 w-full h-full object-cover"
-                  style={{ display: isStreaming ? 'block' : 'none' }}
+                  style={{
+                    display: isStreaming ? 'block' : 'none',
+                    zIndex: 10,
+                    position: 'absolute',
+                  }}
                 />
 
                 {!isStreaming && (
