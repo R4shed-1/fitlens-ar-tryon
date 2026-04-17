@@ -20,13 +20,13 @@ interface GlassesModel {
 }
 
 const glassesOptions: GlassesModel[] = [
-  { id: 'glasses-01', name: 'Sport Orange',  modelPath: '/models-3d-all/glasses-01/scene.gltf', preview: '/models-3d-all/glasses-01/glasses_01.png', scaleFactor: 1.6, yOffset: -15, rotY: Math.PI / 2 },
-  { id: 'glasses-02', name: 'Classic Black', modelPath: '/models-3d-all/glasses-02/scene.gltf', preview: '/models-3d-all/glasses-02/glasses_02.png', scaleFactor: 2.0, yOffset: -15, rotY: Math.PI },
-  { id: 'glasses-03', name: 'Modern Blue',   modelPath: '/models-3d-all/glasses-03/scene.gltf', preview: '/models-3d-all/glasses-03/glasses_03.png', scaleFactor: 1.4, yOffset: -15, rotY: Math.PI },
-  { id: 'glasses-04', name: 'Red Frame',     modelPath: '/models-3d-all/glasses-04/scene.gltf', preview: '/models-3d-all/glasses-04/glasses_04.png', scaleFactor: 1.6, yOffset: -15, rotY: Math.PI },
-  { id: 'glasses-05', name: 'Gold Aviator',  modelPath: '/models-3d-all/glasses-05/scene.gltf', preview: '/models-3d-all/glasses-05/glasses_05.png', scaleFactor: 1.6, yOffset: -10, rotY: Math.PI },
-  { id: 'glasses-06', name: 'Purple Style',  modelPath: '/models-3d-all/glasses-06/scene.gltf', preview: '/models-3d-all/glasses-06/glasses_06.png', scaleFactor: 1.4, yOffset: -15, rotY: Math.PI },
-  { id: 'glasses-07', name: 'Round Wire',    modelPath: '/models-3d-all/glasses-07/scene.gltf', preview: '/models-3d-all/glasses-07/glasses_07.png', scaleFactor: 1.7, yOffset: -25, rotY: Math.PI },
+  { id: 'glasses-01', name: 'Sport Orange',  modelPath: '/models-3d-all/glasses-01/scene.gltf', preview: '/models-3d-all/glasses-01/glasses_01.png', scaleFactor: 2.6, yOffset: -10, rotY: 0 },
+  { id: 'glasses-02', name: 'Classic Black', modelPath: '/models-3d-all/glasses-02/scene.gltf', preview: '/models-3d-all/glasses-02/glasses_02.png', scaleFactor: 3.0, yOffset: -15, rotY: Math.PI },
+  { id: 'glasses-03', name: 'Modern Blue',   modelPath: '/models-3d-all/glasses-03/scene.gltf', preview: '/models-3d-all/glasses-03/glasses_03.png', scaleFactor: 2.4, yOffset: -15, rotY: Math.PI },
+  { id: 'glasses-04', name: 'Red Frame',     modelPath: '/models-3d-all/glasses-04/scene.gltf', preview: '/models-3d-all/glasses-04/glasses_04.png', scaleFactor: 2.6, yOffset: -15, rotY: Math.PI },
+  { id: 'glasses-05', name: 'Gold Aviator',  modelPath: '/models-3d-all/glasses-05/scene.gltf', preview: '/models-3d-all/glasses-05/glasses_05.png', scaleFactor: 2.6, yOffset: -10, rotY: Math.PI },
+  { id: 'glasses-06', name: 'Purple Style',  modelPath: '/models-3d-all/glasses-06/scene.gltf', preview: '/models-3d-all/glasses-06/glasses_06.png', scaleFactor: 2.4, yOffset: -15, rotY: Math.PI },
+  { id: 'glasses-07', name: 'Round Wire',    modelPath: '/models-3d-all/glasses-07/scene.gltf', preview: '/models-3d-all/glasses-07/glasses_07.png', scaleFactor: 2.7, yOffset: -25, rotY: Math.PI },
 ];
 
 export default function ARTryOn3D() {
