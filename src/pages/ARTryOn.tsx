@@ -190,7 +190,7 @@ export default function ARTryOn3DUltimate() {
         
         model.scale.set(0.01, 0.01, 0.01);
         model.position.set(0, 0, 0);
-        model.rotation.y = Math.PI;
+        model.rotation.y = 0;
         
         // Enable shadows
         model.traverse((child) => {
@@ -437,9 +437,9 @@ export default function ARTryOn3DUltimate() {
           }
           
           // FULL 3D HEAD ROTATION
-          glassesModelRef.current.rotation.x = -smoothedPoseRef.current.pitch;
-          glassesModelRef.current.rotation.y = -smoothedPoseRef.current.yaw;
-          glassesModelRef.current.rotation.z = angle;
+          glassesModelRef.current.rotation.x = smoothedPoseRef.current.pitch;
+          glassesModelRef.current.rotation.y = smoothedPoseRef.current.yaw;
+          glassesModelRef.current.rotation.z = -angle;
           
           // Scale based on eye distance (size perception)
           const scale = (eyeDistance / canvas.width) * 2.5;
