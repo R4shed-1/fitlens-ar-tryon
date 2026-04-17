@@ -452,8 +452,8 @@ export default function ARTryOn3DUltimate() {
           glassesModelRef.current.rotation.y = smoothedPoseRef.current.yaw;
           glassesModelRef.current.rotation.z = -angle;
           
-          // Scale based on eye distance (size perception)
-          const scale = (eyeDistance / canvas.width) * 2.5;
+          // Scale based on eye distance (size perception) — relative to model's natural size
+          const scale = (eyeDistance / canvas.width) * 0.06;
           glassesModelRef.current.scale.set(scale, scale, scale);
           
           // Shadow plane follows face
