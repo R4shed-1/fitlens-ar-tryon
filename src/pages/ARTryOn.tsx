@@ -325,14 +325,19 @@ export default function ARTryOn() {
               <div className="relative aspect-video bg-secondary rounded-xl overflow-hidden">
                 <video
                   ref={videoRef}
-                  className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ display: 'none', zIndex: 1 }}
                   playsInline
                   muted
                 />
                 <canvas
                   ref={canvasRef}
                   className="absolute inset-0 w-full h-full object-cover"
-                  style={{ display: isStreaming ? 'block' : 'none' }}
+                  style={{
+                    display: isStreaming ? 'block' : 'none',
+                    zIndex: 10,
+                    position: 'absolute',
+                  }}
                 />
 
                 {!isStreaming && (
