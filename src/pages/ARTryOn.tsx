@@ -209,19 +209,19 @@ export default function ARTryOn() {
           // RED DOTS on eyes - MASSIVE SIZE
           ctx.fillStyle = 'red';
           ctx.beginPath();
-          ctx.arc(mirroredLeft.x, mirroredLeft.y, 25, 0, Math.PI * 2);
+          ctx.arc(safeLeft.x, safeLeft.y, 25, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = 'white';
           ctx.font = 'bold 16px Arial';
-          ctx.fillText('L', mirroredLeft.x - 5, mirroredLeft.y + 5);
+          ctx.fillText('L', safeLeft.x - 5, safeLeft.y + 5);
 
           ctx.fillStyle = 'red';
           ctx.beginPath();
-          ctx.arc(mirroredRight.x, mirroredRight.y, 25, 0, Math.PI * 2);
+          ctx.arc(safeRight.x, safeRight.y, 25, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = 'white';
           ctx.font = 'bold 16px Arial';
-          ctx.fillText('R', mirroredRight.x - 5, mirroredRight.y + 5);
+          ctx.fillText('R', safeRight.x - 5, safeRight.y + 5);
 
           // GREEN CENTER DOT - MASSIVE
           ctx.fillStyle = 'lime';
@@ -233,12 +233,12 @@ export default function ARTryOn() {
           ctx.fillText('C', centerPoint.x - 7, centerPoint.y + 7);
 
           const eyeDistance = Math.sqrt(
-            Math.pow(mirroredRight.x - mirroredLeft.x, 2) +
-            Math.pow(mirroredRight.y - mirroredLeft.y, 2)
+            Math.pow(safeRight.x - safeLeft.x, 2) +
+            Math.pow(safeRight.y - safeLeft.y, 2)
           );
           const angle = Math.atan2(
-            mirroredRight.y - mirroredLeft.y,
-            mirroredRight.x - mirroredLeft.x
+            safeRight.y - safeLeft.y,
+            safeRight.x - safeLeft.x
           );
           const glassesWidth = eyeDistance * 1.8;
           const glassesHeight = glassesWidth * 0.35;
@@ -264,7 +264,7 @@ export default function ARTryOn() {
           ctx.lineWidth = 3;
           ctx.font = 'bold 20px Arial';
           ctx.textAlign = 'left';
-          const debugText = `L(${Math.round(mirroredLeft.x)},${Math.round(mirroredLeft.y)}) R(${Math.round(mirroredRight.x)},${Math.round(mirroredRight.y)}) C(${Math.round(centerPoint.x)},${Math.round(centerPoint.y)})`;
+          const debugText = `L(${Math.round(safeLeft.x)},${Math.round(safeLeft.y)}) R(${Math.round(safeRight.x)},${Math.round(safeRight.y)}) C(${Math.round(centerPoint.x)},${Math.round(centerPoint.y)})`;
           ctx.strokeText(debugText, 10, canvas.height - 30);
           ctx.fillText(debugText, 10, canvas.height - 30);
 
