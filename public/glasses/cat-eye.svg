@@ -1,0 +1,17 @@
+<svg width="800" height="300" viewBox="0 0 800 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M 100 150 Q 120 100 200 110 Q 280 120 300 150 Q 280 190 200 185 Q 120 180 100 150 Z" fill="#8B008B" stroke="#4B0082" stroke-width="6"/>
+  <path d="M 110 150 Q 125 110 200 118 Q 275 125 290 150 Q 275 182 200 177 Q 125 172 110 150 Z" fill="rgba(200, 150, 200, 0.3)"/>
+  <ellipse cx="180" cy="130" rx="35" ry="25" fill="rgba(255, 255, 255, 0.5)"/>
+  <ellipse cx="230" cy="160" rx="20" ry="15" fill="rgba(255, 255, 255, 0.3)"/>
+  <circle cx="295" cy="120" r="6" fill="#FFD700"/>
+  <path d="M 500 150 Q 520 120 600 110 Q 680 100 700 150 Q 680 180 600 185 Q 520 190 500 150 Z" fill="#8B008B" stroke="#4B0082" stroke-width="6"/>
+  <path d="M 510 150 Q 525 125 600 118 Q 675 110 690 150 Q 675 172 600 177 Q 525 182 510 150 Z" fill="rgba(200, 150, 200, 0.3)"/>
+  <ellipse cx="580" cy="130" rx="35" ry="25" fill="rgba(255, 255, 255, 0.5)"/>
+  <ellipse cx="630" cy="160" rx="20" ry="15" fill="rgba(255, 255, 255, 0.3)"/>
+  <circle cx="505" cy="120" r="6" fill="#FFD700"/>
+  <path d="M 300 150 Q 400 148 500 150" stroke="#8B008B" stroke-width="5" fill="none"/>
+  <line x1="100" y1="150" x2="55" y2="145" stroke="#8B008B" stroke-width="6"/>
+  <circle cx="100" cy="150" r="4" fill="#FFD700"/>
+  <line x1="700" y1="150" x2="745" y2="145" stroke="#8B008B" stroke-width="6"/>
+  <circle cx="700" cy="150" r="4" fill="#FFD700"/>
+</svg>
