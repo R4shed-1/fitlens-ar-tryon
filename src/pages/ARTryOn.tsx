@@ -138,24 +138,6 @@ export default function ARTryOn() {
     ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
     ctx.restore();
 
-    // ALWAYS DRAW TEST BOX (regardless of detection)
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-    ctx.fillRect(50, 50, 300, 100);
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 30px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText('CANVAS WORKS!', 70, 110);
-
-    // FORCE DRAW BRIGHT OVERLAYS - NO CONDITIONS
-    ctx.fillStyle = 'rgba(0, 255, 0, 0.9)';
-    ctx.fillRect(200, 200, 200, 200);
-    ctx.fillStyle = 'black';
-    ctx.font = 'bold 40px Arial';
-    ctx.fillText('TEST BOX', 230, 310);
-    ctx.fillStyle = 'rgba(255, 0, 255, 0.9)';
-    ctx.beginPath();
-    ctx.arc(400, 300, 60, 0, Math.PI * 2);
-    ctx.fill();
 
     try {
       const detections = await faceapi
