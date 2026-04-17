@@ -258,6 +258,7 @@ export default function ARTryOn() {
           const glassesHeight = glassesWidth * 0.35;
 
           // YELLOW BOX - MUCH MORE VISIBLE
+          console.log('🟡 DRAWING YELLOW BOX NOW');
           ctx.save();
           ctx.translate(centerPoint.x, centerPoint.y - 15);
           ctx.rotate(angle);
