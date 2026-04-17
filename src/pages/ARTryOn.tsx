@@ -176,20 +176,31 @@ export default function ARTryOn() {
             y: (mirroredLeft.y + mirroredRight.y) / 2,
           };
 
-          // RED DOTS on eyes
+          // RED DOTS on eyes - MASSIVE SIZE
           ctx.fillStyle = 'red';
           ctx.beginPath();
-          ctx.arc(mirroredLeft.x, mirroredLeft.y, 15, 0, Math.PI * 2);
+          ctx.arc(mirroredLeft.x, mirroredLeft.y, 25, 0, Math.PI * 2);
           ctx.fill();
-          ctx.beginPath();
-          ctx.arc(mirroredRight.x, mirroredRight.y, 15, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 16px Arial';
+          ctx.fillText('L', mirroredLeft.x - 5, mirroredLeft.y + 5);
 
-          // GREEN CENTER DOT
+          ctx.fillStyle = 'red';
+          ctx.beginPath();
+          ctx.arc(mirroredRight.x, mirroredRight.y, 25, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 16px Arial';
+          ctx.fillText('R', mirroredRight.x - 5, mirroredRight.y + 5);
+
+          // GREEN CENTER DOT - MASSIVE
           ctx.fillStyle = 'lime';
           ctx.beginPath();
-          ctx.arc(centerPoint.x, centerPoint.y, 18, 0, Math.PI * 2);
+          ctx.arc(centerPoint.x, centerPoint.y, 30, 0, Math.PI * 2);
           ctx.fill();
+          ctx.fillStyle = 'black';
+          ctx.font = 'bold 20px Arial';
+          ctx.fillText('C', centerPoint.x - 7, centerPoint.y + 7);
 
           const eyeDistance = Math.sqrt(
             Math.pow(mirroredRight.x - mirroredLeft.x, 2) +
@@ -202,19 +213,19 @@ export default function ARTryOn() {
           const glassesWidth = eyeDistance * 1.8;
           const glassesHeight = glassesWidth * 0.35;
 
-          // YELLOW BOX
+          // YELLOW BOX - MUCH MORE VISIBLE
           ctx.save();
           ctx.translate(centerPoint.x, centerPoint.y - 15);
           ctx.rotate(angle);
-          ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
+          ctx.fillStyle = 'rgba(255, 255, 0, 0.9)';
           ctx.fillRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
           ctx.strokeStyle = 'red';
-          ctx.lineWidth = 5;
+          ctx.lineWidth = 8;
           ctx.strokeRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
           ctx.fillStyle = 'black';
-          ctx.font = 'bold 24px Arial';
+          ctx.font = 'bold 30px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText('GLASSES', 0, 5);
+          ctx.fillText('GLASSES', 0, 10);
           ctx.restore();
 
           // Try to draw actual glasses if loaded
