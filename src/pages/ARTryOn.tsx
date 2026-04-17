@@ -331,8 +331,8 @@ export default function ARTryOn3D() {
           g.rotation.y = cfg.rotY;
           g.rotation.z = -angle;
 
-          // Scale: model is normalized to 1 unit wide → multiply by eye-dist px
-          const s = eyeDistance * cfg.scaleFactor * 8; // 8 ≈ face-width / eye-dist
+          // Scale: model is normalized to width=1 → glasses width = eyeDist × factor
+          const s = eyeDistance * cfg.scaleFactor;
           g.scale.set(s, s, s);
 
           rendererRef.current.render(sceneRef.current!, cameraRef.current);
