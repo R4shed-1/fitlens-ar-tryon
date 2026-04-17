@@ -1,133 +1,138 @@
 import { useEffect, useRef, useState } from 'react';
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Camera, Upload, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-/**
- * Per-model tuning derived from the reference Virtual-Glasses-Try-on project.
- * - upOffset: vertical pixel offset along the head's "up" axis (positive = lower on face)
- * - scaleFactor: multiplier applied to inter-eye pixel distance for sizing
- * - rotY: extra Y rotation needed because some GLTF models face different directions
- */
 interface GlassesModel {
   id: string;
   name: string;
   modelPath: string;
-  upOffset: number;
-  scaleFactor: number;
-  rotY: number;
+  preview: string;
 }
 
 const glassesOptions: GlassesModel[] = [
-  // aviator ≈ glasses-01: scale 0.01, up 10
-  { id: 'aviator', name: 'Aviator', modelPath: '/models-3d/aviator/scene.gltf', upOffset: 10, scaleFactor: 0.01, rotY: Math.PI },
-  // wayfarer ≈ glasses-02: scale 0.4, up 0
-  { id: 'wayfarer', name: 'Wayfarer', modelPath: '/models-3d/wayfarer/scene.gltf', upOffset: 0, scaleFactor: 0.4, rotY: Math.PI },
-  // round ≈ glasses-03: scale 0.4, up -40
-  { id: 'round', name: 'Round', modelPath: '/models-3d/round/scene.gltf', upOffset: -40, scaleFactor: 0.4, rotY: Math.PI },
-  // cat-eye ≈ glasses-05: scale 0.11, up -80
-  { id: 'cat-eye', name: 'Cat Eye', modelPath: '/models-3d/cat-eye/scene.gltf', upOffset: -80, scaleFactor: 0.11, rotY: Math.PI },
+  { id: 'glasses-01', name: 'Sport Orange', modelPath: '/models-3d-all/glasses-01/scene.gltf', preview: '/models-3d-all/glasses-01/glasses_01.png' },
+  { id: 'glasses-02', name: 'Classic Black', modelPath: '/models-3d-all/glasses-02/scene.gltf', preview: '/models-3d-all/glasses-02/glasses_02.png' },
+  { id: 'glasses-03', name: 'Modern Blue', modelPath: '/models-3d-all/glasses-03/scene.gltf', preview: '/models-3d-all/glasses-03/glasses_03.png' },
+  { id: 'glasses-04', name: 'Red Frame', modelPath: '/models-3d-all/glasses-04/scene.gltf', preview: '/models-3d-all/glasses-04/glasses_04.png' },
+  { id: 'glasses-05', name: 'Gold Aviator', modelPath: '/models-3d-all/glasses-05/scene.gltf', preview: '/models-3d-all/glasses-05/glasses_05.png' },
+  { id: 'glasses-06', name: 'Purple Style', modelPath: '/models-3d-all/glasses-06/scene.gltf', preview: '/models-3d-all/glasses-06/glasses_06.png' },
+  { id: 'glasses-07', name: 'Round Wire', modelPath: '/models-3d-all/glasses-07/scene.gltf', preview: '/models-3d-all/glasses-07/glasses_07.png' },
 ];
-
-// MediaPipe FaceMesh landmark indices (same as the reference project)
-const KP = { midEye: 168, leftEye: 143, rightEye: 372, noseBottom: 2 };
 
 export default function ARTryOn3D() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const threeCanvasRef = useRef<HTMLCanvasElement>(null);
-
+  
   const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedGlasses, setSelectedGlasses] = useState<GlassesModel>(glassesOptions[0]);
   const [error, setError] = useState<string | null>(null);
-  const [debug, setDebug] = useState({ faceDetected: false, drawingActive: false });
-
+  const [debug, setDebug] = useState({
+    faceDetected: false,
+    landmarksFound: false,
+    drawingActive: false,
+  });
+  
   const animationFrameRef = useRef<number>();
   const isDrawingRef = useRef(false);
   const lastVideoTimeRef = useRef(-1);
-
-  // Three.js refs
+  const smoothedLeftRef = useRef({ x: 0, y: 0, z: 0 });
+  const smoothedRightRef = useRef({ x: 0, y: 0, z: 0 });
+  const smoothingFactor = 0.7;
+  
+  // Three.js references
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const glassesModelRef = useRef<THREE.Group | null>(null);
   const loaderRef = useRef<GLTFLoader>(new GLTFLoader());
-  const selectedRef = useRef<GlassesModel>(selectedGlasses);
 
+  // Load MediaPipe
   useEffect(() => {
-    selectedRef.current = selectedGlasses;
-  }, [selectedGlasses]);
-
-  // Load MediaPipe Face Landmarker
-  useEffect(() => {
-    (async () => {
+    const loadModel = async () => {
       try {
+        console.log('🔄 Loading MediaPipe...');
+        
         const vision = await FilesetResolver.forVisionTasks(
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
         );
+        
         const landmarker = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
-            modelAssetPath:
-              'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-            delegate: 'GPU',
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+            delegate: 'GPU'
           },
           runningMode: 'VIDEO',
           numFaces: 1,
+          minFaceDetectionConfidence: 0.5,
+          minFacePresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+          outputFaceBlendshapes: false,
+          outputFacialTransformationMatrixes: false
         });
+
         setFaceLandmarker(landmarker);
         setIsModelLoaded(true);
+        console.log('✅ MediaPipe loaded');
       } catch (err) {
         setError('Failed to load MediaPipe: ' + (err as Error).message);
+        console.error('❌ Error:', err);
       }
-    })();
+    };
+    loadModel();
   }, []);
 
-  // Initialize Three.js scene with PIXEL-SPACE camera (matches reference approach)
-  const initThreeForVideo = (videoWidth: number, videoHeight: number) => {
+  // Initialize Three.js
+  useEffect(() => {
     if (!threeCanvasRef.current) return;
 
-    if (!sceneRef.current) {
-      const scene = new THREE.Scene();
-      sceneRef.current = scene;
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
 
-      // Lights — front + back spots like reference
-      const front = new THREE.SpotLight(0xffffff, 1.2);
-      front.position.set(10, 10, 10);
-      scene.add(front);
-      const back = new THREE.SpotLight(0xffffff, 0.8);
-      back.position.set(10, 10, -10);
-      scene.add(back);
-      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    }
-
-    // Recreate camera in pixel-space so MediaPipe pixel landmarks map directly
-    const camera = new THREE.PerspectiveCamera(45, videoWidth / videoHeight, 0.1, 2000);
-    camera.position.x = videoWidth / 2;
-    camera.position.y = -videoHeight / 2;
-    camera.position.z = -(videoHeight / 2) / Math.tan(45 / 2);
-    camera.lookAt(new THREE.Vector3(videoWidth / 2, -videoHeight / 2, 0));
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      threeCanvasRef.current.width / threeCanvasRef.current.height,
+      0.1,
+      1000
+    );
+    camera.position.z = 5;
     cameraRef.current = camera;
 
-    if (!rendererRef.current) {
-      const renderer = new THREE.WebGLRenderer({
-        canvas: threeCanvasRef.current,
-        alpha: true,
-        antialias: true,
-      });
-      renderer.setClearColor(0x000000, 0);
-      rendererRef.current = renderer;
-    }
-    rendererRef.current.setSize(videoWidth, videoHeight, false);
-    threeCanvasRef.current.width = videoWidth;
-    threeCanvasRef.current.height = videoHeight;
-  };
+    const renderer = new THREE.WebGLRenderer({
+      canvas: threeCanvasRef.current,
+      alpha: true,
+      antialias: true,
+    });
+    renderer.setSize(threeCanvasRef.current.width, threeCanvasRef.current.height);
+    renderer.setClearColor(0x000000, 0);
+    rendererRef.current = renderer;
 
-  // Load 3D glasses model when selection changes
+    // Better lighting for realistic glasses
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+    scene.add(ambientLight);
+
+    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight1.position.set(1, 1, 1);
+    scene.add(directionalLight1);
+
+    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+    directionalLight2.position.set(-1, 0, 1);
+    scene.add(directionalLight2);
+
+    console.log('✅ Three.js initialized');
+
+    return () => {
+      renderer.dispose();
+    };
+  }, []);
+
+  // Load selected 3D model
   useEffect(() => {
     if (!sceneRef.current) return;
 
@@ -136,25 +141,42 @@ export default function ARTryOn3D() {
       glassesModelRef.current = null;
     }
 
+    console.log('🔄 Loading model:', selectedGlasses.name);
+    
     loaderRef.current.load(
       selectedGlasses.modelPath,
       (gltf) => {
         const model = gltf.scene;
-        // Initial scale = 1; per-frame we set absolute scale using eye distance
-        model.scale.set(1, 1, 1);
+        
+        // Initial tiny scale
+        model.scale.set(0.01, 0.01, 0.01);
+        model.position.set(0, 0, 0);
+        
+        // Rotate to face forward (models are often sideways)
+        model.rotation.y = Math.PI / 2;
+        
         glassesModelRef.current = model;
         sceneRef.current?.add(model);
+        
+        console.log('✅ Model loaded:', selectedGlasses.name);
       },
       undefined,
-      (err) => console.error('GLTF load error:', err)
+      (err) => {
+        console.error('❌ Model load error:', err);
+      }
     );
   }, [selectedGlasses]);
 
   const startWebcam = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        video: { 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 }, 
+          facingMode: 'user' 
+        },
       });
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
@@ -164,8 +186,9 @@ export default function ARTryOn3D() {
           });
         };
       }
-    } catch {
+    } catch (err) {
       setError('Camera access denied');
+      console.error('Webcam error:', err);
     }
   };
 
@@ -173,141 +196,185 @@ export default function ARTryOn3D() {
     isDrawingRef.current = false;
     if (videoRef.current?.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
       setIsStreaming(false);
     }
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
     lastVideoTimeRef.current = -1;
-    setDebug({ faceDetected: false, drawingActive: false });
+    smoothedLeftRef.current = { x: 0, y: 0, z: 0 };
+    smoothedRightRef.current = { x: 0, y: 0, z: 0 };
+    setDebug({ faceDetected: false, landmarksFound: false, drawingActive: false });
   };
 
-  // Main detect + render loop
-  const tick = () => {
+  // Main detection and rendering
+  const detectFaceAndRender3D = () => {
     if (!isDrawingRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const threeCanvas = threeCanvasRef.current;
-    if (!video || !canvas || !threeCanvas || !faceLandmarker) {
-      animationFrameRef.current = requestAnimationFrame(tick);
-      return;
-    }
-    const ctx = canvas.getContext('2d');
-    if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) {
-      animationFrameRef.current = requestAnimationFrame(tick);
+    if (!videoRef.current || !canvasRef.current || !threeCanvasRef.current || !faceLandmarker) {
+      animationFrameRef.current = requestAnimationFrame(detectFaceAndRender3D);
       return;
     }
 
-    // Match canvases to video size and (re)init pixel-space three camera
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      animationFrameRef.current = requestAnimationFrame(detectFaceAndRender3D);
+      return;
+    }
+
+    // Resize canvases
     if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      initThreeForVideo(video.videoWidth, video.videoHeight);
+      threeCanvasRef.current.width = video.videoWidth;
+      threeCanvasRef.current.height = video.videoHeight;
+      
+      if (rendererRef.current && cameraRef.current) {
+        rendererRef.current.setSize(canvas.width, canvas.height);
+        cameraRef.current.aspect = canvas.width / canvas.height;
+        cameraRef.current.updateProjectionMatrix();
+      }
     }
 
-    // Mirrored video draw
+    // Draw video
     ctx.save();
     ctx.scale(-1, 1);
     ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
     ctx.restore();
 
-    const t = video.currentTime;
-    if (t === lastVideoTimeRef.current) {
-      animationFrameRef.current = requestAnimationFrame(tick);
-      return;
-    }
-    lastVideoTimeRef.current = t;
-
+    // Detect face - use performance.now() to fix timestamp error
     try {
       const results = faceLandmarker.detectForVideo(video, performance.now());
-      const faces = results?.faceLandmarks ?? [];
-      const glasses = glassesModelRef.current;
-      const camera = cameraRef.current;
-      const renderer = rendererRef.current;
-      const scene = sceneRef.current;
 
-      if (faces.length > 0 && glasses && camera && renderer && scene) {
-        const lm = faces[0];
-        const w = canvas.width;
-        const h = canvas.height;
-
-        // To pixel coords. Mirror X to match the mirrored video draw above.
-        const toPx = (i: number) => ({
-          x: w - lm[i].x * w,
-          y: lm[i].y * h,
-          z: lm[i].z * w,
+      if (results && results.faceLandmarks && results.faceLandmarks.length > 0) {
+        const landmarks = results.faceLandmarks[0];
+        
+        // Eye landmarks
+        const leftEyeIndices = [33, 133, 160, 159, 158, 157, 173, 246];
+        const rightEyeIndices = [362, 263, 387, 386, 385, 384, 398, 466];
+        
+        // Calculate eye centers
+        let leftEyeX = 0, leftEyeY = 0, leftEyeZ = 0;
+        leftEyeIndices.forEach(idx => {
+          leftEyeX += landmarks[idx].x;
+          leftEyeY += landmarks[idx].y;
+          leftEyeZ += landmarks[idx].z || 0;
         });
-        const midEye = toPx(KP.midEye);
-        const leftEye = toPx(KP.leftEye);
-        const rightEye = toPx(KP.rightEye);
-        const noseBottom = toPx(KP.noseBottom);
+        leftEyeX = (leftEyeX / leftEyeIndices.length) * canvas.width;
+        leftEyeY = (leftEyeY / leftEyeIndices.length) * canvas.height;
+        leftEyeZ = leftEyeZ / leftEyeIndices.length;
 
-        const cfg = selectedRef.current;
+        let rightEyeX = 0, rightEyeY = 0, rightEyeZ = 0;
+        rightEyeIndices.forEach(idx => {
+          rightEyeX += landmarks[idx].x;
+          rightEyeY += landmarks[idx].y;
+          rightEyeZ += landmarks[idx].z || 0;
+        });
+        rightEyeX = (rightEyeX / rightEyeIndices.length) * canvas.width;
+        rightEyeY = (rightEyeY / rightEyeIndices.length) * canvas.height;
+        rightEyeZ = rightEyeZ / rightEyeIndices.length;
 
-        // Position (pixel-space camera; flip Y for three.js orientation)
-        glasses.position.x = midEye.x;
-        glasses.position.y = -midEye.y + cfg.upOffset;
-        glasses.position.z = -camera.position.z + midEye.z;
+        // Mirror X
+        const mirroredLeftX = canvas.width - leftEyeX;
+        const mirroredRightX = canvas.width - rightEyeX;
 
-        // Up vector from nose-bottom -> mid-eye (gives real 3D head tilt)
-        const upx = midEye.x - noseBottom.x;
-        const upy = -(midEye.y - noseBottom.y);
-        const upz = midEye.z - noseBottom.z;
-        const len = Math.sqrt(upx * upx + upy * upy + upz * upz) || 1;
-        glasses.up.set(upx / len, upy / len, upz / len);
+        // Smooth coordinates
+        smoothedLeftRef.current.x = smoothedLeftRef.current.x * smoothingFactor + mirroredLeftX * (1 - smoothingFactor);
+        smoothedLeftRef.current.y = smoothedLeftRef.current.y * smoothingFactor + leftEyeY * (1 - smoothingFactor);
+        smoothedLeftRef.current.z = smoothedLeftRef.current.z * smoothingFactor + leftEyeZ * (1 - smoothingFactor);
+        
+        smoothedRightRef.current.x = smoothedRightRef.current.x * smoothingFactor + mirroredRightX * (1 - smoothingFactor);
+        smoothedRightRef.current.y = smoothedRightRef.current.y * smoothingFactor + rightEyeY * (1 - smoothingFactor);
+        smoothedRightRef.current.z = smoothedRightRef.current.z * smoothingFactor + rightEyeZ * (1 - smoothingFactor);
 
-        // Scale by eye distance × per-model factor
-        const dx = leftEye.x - rightEye.x;
-        const dy = leftEye.y - rightEye.y;
-        const dz = leftEye.z - rightEye.z;
-        const eyeDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        const s = eyeDist * cfg.scaleFactor;
-        glasses.scale.set(s, s, s);
+        const finalLeftX = smoothedLeftRef.current.x;
+        const finalLeftY = smoothedLeftRef.current.y;
+        const finalRightX = smoothedRightRef.current.x;
+        const finalRightY = smoothedRightRef.current.y;
 
-        // Rotation: face the camera + match head tilt around Z
-        glasses.rotation.y = cfg.rotY;
-        glasses.rotation.z = Math.PI / 2 - Math.acos(Math.max(-1, Math.min(1, glasses.up.x)));
+        // Calculate center and metrics
+        const centerX = (finalLeftX + finalRightX) / 2;
+        const centerY = (finalLeftY + finalRightY) / 2;
+        const dx = finalRightX - finalLeftX;
+        const dy = finalRightY - finalLeftY;
+        const angle = Math.atan2(dy, dx);
+        const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
-        renderer.render(scene, camera);
-        setDebug({ faceDetected: true, drawingActive: true });
+        // Position 3D glasses
+        if (glassesModelRef.current && cameraRef.current && rendererRef.current) {
+          // Normalize to 3D space
+          const normalizedX = (centerX / canvas.width) * 2 - 1;
+          const normalizedY = -(centerY / canvas.height) * 2 + 1;
+          
+          glassesModelRef.current.position.x = normalizedX * 2.5;
+          glassesModelRef.current.position.y = normalizedY * 2.5 + 0.15;
+          glassesModelRef.current.position.z = 0;
+          
+          // Rotation - face forward + tilt with face
+          glassesModelRef.current.rotation.y = Math.PI / 2;
+          glassesModelRef.current.rotation.z = -angle;
+          
+          // Scale based on eye distance
+          const scale = (eyeDistance / canvas.width) * 2.5;
+          glassesModelRef.current.scale.set(scale, scale, scale);
+          
+          // Render
+          rendererRef.current.render(sceneRef.current!, cameraRef.current);
+        }
+
+        setDebug({ 
+          faceDetected: true, 
+          landmarksFound: true, 
+          drawingActive: true 
+        });
       } else {
-        // Clear three canvas when no face
-        if (renderer && scene && camera) renderer.render(scene, camera);
-        setDebug({ faceDetected: false, drawingActive: false });
+        setDebug({ 
+          faceDetected: false, 
+          landmarksFound: false, 
+          drawingActive: false 
+        });
       }
     } catch (err) {
-      console.error('Detection error:', err);
+      console.error('❌ Detection error:', err);
     }
 
-    animationFrameRef.current = requestAnimationFrame(tick);
+    animationFrameRef.current = requestAnimationFrame(detectFaceAndRender3D);
   };
 
   useEffect(() => {
     if (isStreaming && isModelLoaded && faceLandmarker) {
       isDrawingRef.current = true;
-      tick();
+      detectFaceAndRender3D();
     }
     return () => {
       isDrawingRef.current = false;
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStreaming, isModelLoaded, faceLandmarker]);
+  }, [isStreaming, isModelLoaded, faceLandmarker, selectedGlasses]);
 
   useEffect(() => () => stopWebcam(), []);
 
   const captureScreenshot = () => {
-    if (!canvasRef.current || !threeCanvasRef.current) return;
-    const tmp = document.createElement('canvas');
-    tmp.width = canvasRef.current.width;
-    tmp.height = canvasRef.current.height;
-    const c = tmp.getContext('2d')!;
-    c.drawImage(canvasRef.current, 0, 0);
-    c.drawImage(threeCanvasRef.current, 0, 0);
-    const link = document.createElement('a');
-    link.download = `fitlens-3d-tryon-${Date.now()}.png`;
-    link.href = tmp.toDataURL('image/png');
-    link.click();
+    if (canvasRef.current && threeCanvasRef.current) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvasRef.current.width;
+      tempCanvas.height = canvasRef.current.height;
+      const tempCtx = tempCanvas.getContext('2d')!;
+      
+      tempCtx.drawImage(canvasRef.current, 0, 0);
+      tempCtx.drawImage(threeCanvasRef.current, 0, 0);
+      
+      const link = document.createElement('a');
+      link.download = `fitlens-3d-${Date.now()}.png`;
+      link.href = tempCanvas.toDataURL('image/png');
+      link.click();
+    }
   };
 
   const StatusDot = ({ ok, label }: { ok: boolean; label: string }) => (
@@ -374,13 +441,9 @@ export default function ARTryOn3D() {
                       <p className="text-muted-foreground mb-4">Camera not active</p>
                       <Button onClick={startWebcam} disabled={!isModelLoaded}>
                         {!isModelLoaded ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...
-                          </>
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</>
                         ) : (
-                          <>
-                            <Camera className="mr-2 h-4 w-4" /> Start Camera
-                          </>
+                          <><Camera className="mr-2 h-4 w-4" /> Start Camera</>
                         )}
                       </Button>
                     </div>
@@ -410,33 +473,38 @@ export default function ARTryOn3D() {
           <div className="lg:col-span-1">
             <Card className="p-6 glass-card">
               <h2 className="font-display text-xl font-semibold mb-4 text-foreground">Select 3D Glasses</h2>
-              <div className="grid grid-cols-2 gap-3">
-                {glassesOptions.map((g) => (
+              <div className="grid grid-cols-2 gap-3 max-h-[500px] overflow-y-auto">
+                {glassesOptions.map((glasses) => (
                   <button
-                    key={g.id}
-                    onClick={() => setSelectedGlasses(g)}
+                    key={glasses.id}
+                    onClick={() => setSelectedGlasses(glasses)}
                     className={`p-3 border-2 rounded-xl transition-all hover:scale-[1.02] ${
-                      selectedGlasses.id === g.id
+                      selectedGlasses.id === glasses.id
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:border-primary/40'
                     }`}
                   >
-                    <div className="aspect-video bg-secondary/50 rounded mb-2 flex items-center justify-center">
-                      <p className="text-2xl">👓</p>
+                    <div className="aspect-video bg-secondary/50 rounded mb-2 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={glasses.preview}
+                        alt={glasses.name}
+                        className="max-w-full max-h-full object-contain"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
                     </div>
-                    <p className="text-sm font-medium text-center text-foreground">{g.name}</p>
+                    <p className="text-xs font-medium text-center text-foreground">{glasses.name}</p>
                   </button>
                 ))}
               </div>
 
               <div className="mt-6 p-4 bg-primary/5 border border-primary/15 rounded-xl">
-                <h3 className="font-display font-semibold text-sm mb-2 text-foreground">3D AR Features</h3>
+                <h3 className="font-display font-semibold text-sm mb-2 text-foreground">3D Features</h3>
                 <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>✨ Realistic 3D glasses models</li>
-                  <li>🔄 Rotates with your face</li>
-                  <li>📏 Scales naturally</li>
-                  <li>💡 Real-time lighting</li>
-                  <li>📸 Capture photos!</li>
+                  <li>✨ 7 realistic 3D models</li>
+                  <li>🔄 Rotates with face</li>
+                  <li>📏 Auto-scaling</li>
+                  <li>💡 Real lighting</li>
+                  <li>📸 Capture photos</li>
                 </ul>
               </div>
             </Card>
