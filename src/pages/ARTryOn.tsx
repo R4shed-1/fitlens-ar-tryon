@@ -138,24 +138,6 @@ export default function ARTryOn() {
     ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
     ctx.restore();
 
-    // ALWAYS DRAW TEST BOX (regardless of detection)
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-    ctx.fillRect(50, 50, 300, 100);
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 30px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText('CANVAS WORKS!', 70, 110);
-
-    // FORCE DRAW BRIGHT OVERLAYS - NO CONDITIONS
-    ctx.fillStyle = 'rgba(0, 255, 0, 0.9)';
-    ctx.fillRect(200, 200, 200, 200);
-    ctx.fillStyle = 'black';
-    ctx.font = 'bold 40px Arial';
-    ctx.fillText('TEST BOX', 230, 310);
-    ctx.fillStyle = 'rgba(255, 0, 255, 0.9)';
-    ctx.beginPath();
-    ctx.arc(400, 300, 60, 0, Math.PI * 2);
-    ctx.fill();
 
     try {
       const detections = await faceapi
@@ -198,24 +180,6 @@ export default function ARTryOn() {
             y: (safeLeft.y + safeRight.y) / 2,
           };
 
-          // FORCE DRAW IN CENTER - TEST
-          const testCenterX = canvas.width / 2;
-          const testCenterY = canvas.height / 2;
-          ctx.fillStyle = 'red';
-          ctx.beginPath();
-          ctx.arc(testCenterX, testCenterY, 50, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 40px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('CENTER', testCenterX, testCenterY + 10);
-          ctx.fillStyle = 'rgba(255, 255, 0, 0.9)';
-          ctx.fillRect(testCenterX - 150, testCenterY - 200, 300, 100);
-          ctx.strokeStyle = 'red';
-          ctx.lineWidth = 8;
-          ctx.strokeRect(testCenterX - 150, testCenterY - 200, 300, 100);
-          ctx.fillStyle = 'black';
-          ctx.fillText('GLASSES HERE', testCenterX, testCenterY - 140);
 
           console.log('🎨 ABOUT TO DRAW OVERLAYS - safeLeft:', safeLeft, 'safeRight:', safeRight, 'centerPoint:', centerPoint);
 
