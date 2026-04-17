@@ -26,6 +26,15 @@ const glassesOptions: GlassesModel[] = [
 ];
 
 export default function ARTryOn3DUltimate() {
+  const [searchParams] = useSearchParams();
+  const productId = searchParams.get('product');
+  const initialGlasses = (() => {
+    if (!productId) return glassesOptions[0];
+    const product = products.find((p) => p.id === productId);
+    const match = product?.arModelId && glassesOptions.find((g) => g.id === product.arModelId);
+    return match ?? glassesOptions[0];
+  })();
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const threeCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -33,7 +42,7 @@ export default function ARTryOn3DUltimate() {
   const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [selectedGlasses, setSelectedGlasses] = useState<GlassesModel>(glassesOptions[0]);
+  const [selectedGlasses, setSelectedGlasses] = useState<GlassesModel>(initialGlasses);
   const [error, setError] = useState<string | null>(null);
   const [showMesh, setShowMesh] = useState(false);
   const [showDepth, setShowDepth] = useState(true);
