@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import * as faceapi from 'face-api.js';
+import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Camera, Upload, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -23,6 +23,7 @@ const glassesOptions: GlassesOverlay[] = [
 export default function ARTryOn() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedGlasses, setSelectedGlasses] = useState<GlassesOverlay>(glassesOptions[0]);
@@ -36,28 +37,55 @@ export default function ARTryOn() {
   const animationFrameRef = useRef<number>();
   const glassesImageRef = useRef<HTMLImageElement | null>(null);
   const isDrawingRef = useRef(false);
+  const lastVideoTimeRef = useRef(-1);
 
+  // Load MediaPipe Face Landmarker
   useEffect(() => {
-    const loadModels = async () => {
+    const loadModel = async () => {
       try {
-        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        console.log('🔄 Loading MediaPipe Face Landmarker...');
+        
+        const vision = await FilesetResolver.forVisionTasks(
+          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
+        );
+        
+        const landmarker = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+            delegate: 'GPU'
+          },
+          runningMode: 'VIDEO',
+          numFaces: 1,
+          minFaceDetectionConfidence: 0.5,
+          minFacePresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+          outputFaceBlendshapes: false,
+          outputFacialTransformationMatrixes: false
+        });
+
+        setFaceLandmarker(landmarker);
         setIsModelLoaded(true);
-        console.log('✅ Face detection models loaded');
+        console.log('✅ MediaPipe Face Landmarker loaded successfully');
       } catch (err) {
-        setError('Failed to load face detection models: ' + (err as Error).message);
+        const errorMsg = 'Failed to load MediaPipe model: ' + (err as Error).message;
+        setError(errorMsg);
         console.error('❌ Model loading error:', err);
       }
     };
-    loadModels();
+    loadModel();
   }, []);
 
+  // Start webcam
   const startWebcam = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        video: { 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 }, 
+          facingMode: 'user' 
+        },
       });
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
@@ -73,6 +101,7 @@ export default function ARTryOn() {
     }
   };
 
+  // Stop webcam
   const stopWebcam = () => {
     isDrawingRef.current = false;
     if (videoRef.current?.srcObject) {
@@ -81,10 +110,14 @@ export default function ARTryOn() {
       videoRef.current.srcObject = null;
       setIsStreaming(false);
     }
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    setDebug((p) => ({ ...p, faceDetected: false, landmarksFound: false, drawingActive: false }));
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    lastVideoTimeRef.current = -1;
+    setDebug({ imageLoaded: debug.imageLoaded, faceDetected: false, landmarksFound: false, drawingActive: false });
   };
 
+  // Load glasses image
   useEffect(() => {
     setDebug((p) => ({ ...p, imageLoaded: false }));
     const img = new Image();
@@ -104,234 +137,184 @@ export default function ARTryOn() {
     };
   }, [selectedGlasses]);
 
-  const detectFaceAndOverlay = async () => {
+  // Main detection and overlay loop
+  const detectFaceAndOverlay = () => {
     if (!isDrawingRef.current) return;
-    if (!videoRef.current || !canvasRef.current || !isModelLoaded) {
+    if (!videoRef.current || !canvasRef.current || !faceLandmarker) {
       animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
       return;
     }
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+
     if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) {
       animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
       return;
     }
 
-    // Use the DISPLAYED size of the video, not the raw stream resolution
-    const displayWidth = video.clientWidth;
-    const displayHeight = video.clientHeight;
-
-    if (displayWidth === 0 || displayHeight === 0) {
-      animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
-      return;
+    // Set canvas size to match video
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
     }
 
-    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-      canvas.width = displayWidth;
-      canvas.height = displayHeight;
-      faceapi.matchDimensions(canvas, { width: displayWidth, height: displayHeight });
-    }
+    // Draw mirrored video
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+    ctx.restore();
 
-    // Clear the full canvas each frame
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Only run detection if video time has changed (new frame)
+    const videoTime = video.currentTime;
+    if (videoTime !== lastVideoTimeRef.current) {
+      lastVideoTimeRef.current = videoTime;
 
-    // a) CANVAS OK marker
-    ctx.fillStyle = 'red';
-    ctx.fillRect(40, 40, 120, 60);
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 18px monospace';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('CANVAS OK', 50, 70);
-    ctx.textBaseline = 'alphabetic';
+      try {
+        // Detect face landmarks
+        const results = faceLandmarker.detectForVideo(video, videoTime * 1000);
 
-    // b) Fixed cyan/pink test markers
-    ctx.fillStyle = 'cyan';
-    ctx.beginPath();
-    ctx.arc(220, 220, 20, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'magenta';
-    ctx.fillRect(180, 260, 180, 60);
+        if (results && results.faceLandmarks && results.faceLandmarks.length > 0) {
+          const landmarks = results.faceLandmarks[0];
+          
+          // MediaPipe face mesh indices for eyes:
+          // Left eye: indices 33, 133, 160, 159, 158, 157, 173, 246
+          // Right eye: indices 362, 263, 387, 386, 385, 384, 398, 466
+          
+          // Left eye center (average of key points)
+          const leftEyeIndices = [33, 133, 160, 159, 158, 157, 173, 246];
+          const rightEyeIndices = [362, 263, 387, 386, 385, 384, 398, 466];
+          
+          let leftEyeX = 0, leftEyeY = 0;
+          leftEyeIndices.forEach(idx => {
+            leftEyeX += landmarks[idx].x;
+            leftEyeY += landmarks[idx].y;
+          });
+          leftEyeX = (leftEyeX / leftEyeIndices.length) * canvas.width;
+          leftEyeY = (leftEyeY / leftEyeIndices.length) * canvas.height;
 
-    try {
-      const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
-        .withFaceLandmarks();
+          let rightEyeX = 0, rightEyeY = 0;
+          rightEyeIndices.forEach(idx => {
+            rightEyeX += landmarks[idx].x;
+            rightEyeY += landmarks[idx].y;
+          });
+          rightEyeX = (rightEyeX / rightEyeIndices.length) * canvas.width;
+          rightEyeY = (rightEyeY / rightEyeIndices.length) * canvas.height;
 
-      if (detection) {
-        const resizedDetection = faceapi.resizeResults(detection, {
-          width: displayWidth,
-          height: displayHeight,
-        });
+          // Mirror the X coordinates (video is mirrored)
+          const mirroredLeftX = canvas.width - leftEyeX;
+          const mirroredRightX = canvas.width - rightEyeX;
 
-        const landmarks = resizedDetection.landmarks;
-        const leftEyePoints = landmarks.getLeftEye();
-        const rightEyePoints = landmarks.getRightEye();
+          // Calculate center point
+          const centerX = (mirroredLeftX + mirroredRightX) / 2;
+          const centerY = (leftEyeY + rightEyeY) / 2;
 
-        if (leftEyePoints?.length && rightEyePoints?.length) {
-          const leftEyeCenter = {
-            x: leftEyePoints.reduce((s, p) => s + p.x, 0) / leftEyePoints.length,
-            y: leftEyePoints.reduce((s, p) => s + p.y, 0) / leftEyePoints.length,
-          };
-          const rightEyeCenter = {
-            x: rightEyePoints.reduce((s, p) => s + p.x, 0) / rightEyePoints.length,
-            y: rightEyePoints.reduce((s, p) => s + p.y, 0) / rightEyePoints.length,
-          };
+          // Calculate angle and distance
+          const dx = mirroredRightX - mirroredLeftX;
+          const dy = rightEyeY - leftEyeY;
+          const angle = Math.atan2(dy, dx);
+          const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
-          // TEMP DEBUG: no manual mirroring — use raw resized coords
-          const leftEye = { x: leftEyeCenter.x, y: leftEyeCenter.y };
-          const rightEye = { x: rightEyeCenter.x, y: rightEyeCenter.y };
-
-          const centerPoint = {
-            x: (leftEye.x + rightEye.x) / 2,
-            y: (leftEye.y + rightEye.y) / 2,
-          };
-
-          const eyeDistance = Math.hypot(rightEye.x - leftEye.x, rightEye.y - leftEye.y);
-          const angle = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
+          // Calculate glasses dimensions
           const glassesWidth = eyeDistance * selectedGlasses.scale;
           const glassesHeight = glassesWidth * 0.35;
 
-          console.log('DRAW MARKERS NOW');
-          console.log('leftEye', leftEye);
-          console.log('rightEye', rightEye);
-          console.log('centerPoint', centerPoint);
-          console.log('glassesWidth', glassesWidth);
-          console.log('glassesHeight', glassesHeight);
-
-          // c) Debug text
-          const lines = [
-            `video.videoWidth/Height: ${video.videoWidth} / ${video.videoHeight}`,
-            `video.clientWidth/Height: ${video.clientWidth} / ${video.clientHeight}`,
-            `canvas.width/Height: ${canvas.width} / ${canvas.height}`,
-            `leftEye: ${Math.round(leftEye.x)} / ${Math.round(leftEye.y)}`,
-            `rightEye: ${Math.round(rightEye.x)} / ${Math.round(rightEye.y)}`,
-            `centerPoint: ${Math.round(centerPoint.x)} / ${Math.round(centerPoint.y)}`,
-          ];
-          ctx.font = 'bold 12px monospace';
-          ctx.textAlign = 'left';
-          lines.forEach((line, i) => {
-            const y = 120 + i * 16;
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3;
-            ctx.strokeText(line, 10, y);
-            ctx.fillStyle = 'white';
-            ctx.fillText(line, 10, y);
-          });
-
-          // d) Tracked eye dots
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-
-          // Left eye — RED with "L"
+          // Draw debug markers
+          // Left eye - RED
           ctx.fillStyle = 'red';
           ctx.beginPath();
-          ctx.arc(leftEye.x, leftEye.y, 24, 0, Math.PI * 2);
+          ctx.arc(mirroredLeftX, leftEyeY, 8, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 22px monospace';
-          ctx.fillText('L', leftEye.x, leftEye.y);
 
-          // Right eye — BLUE with "R"
-          ctx.fillStyle = 'blue';
+          // Right eye - RED
+          ctx.fillStyle = 'red';
           ctx.beginPath();
-          ctx.arc(rightEye.x, rightEye.y, 24, 0, Math.PI * 2);
+          ctx.arc(mirroredRightX, rightEyeY, 8, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = 'white';
-          ctx.fillText('R', rightEye.x, rightEye.y);
 
-          // e) Tracked center dot — LIME with "C"
+          // Center point - GREEN
           ctx.fillStyle = 'lime';
           ctx.beginPath();
-          ctx.arc(centerPoint.x, centerPoint.y, 28, 0, Math.PI * 2);
+          ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = 'black';
-          ctx.font = 'bold 24px monospace';
-          ctx.fillText('C', centerPoint.x, centerPoint.y);
 
-          // f) Tracked glasses box — filled yellow 55%, magenta border + cross + label
+          // Yellow glasses box outline
           ctx.save();
-          ctx.translate(centerPoint.x, centerPoint.y);
+          ctx.translate(centerX, centerY + selectedGlasses.offsetY);
           ctx.rotate(angle);
+          
+          // Debug box
+          ctx.strokeStyle = 'yellow';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(
+            -glassesWidth / 2 + selectedGlasses.offsetX,
+            -glassesHeight / 2,
+            glassesWidth,
+            glassesHeight
+          );
 
-          ctx.fillStyle = 'rgba(255, 255, 0, 0.55)';
-          ctx.fillRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
+          // Draw actual glasses if loaded
+          if (glassesImageRef.current && glassesImageRef.current.complete) {
+            ctx.globalAlpha = 0.95;
+            ctx.drawImage(
+              glassesImageRef.current,
+              -glassesWidth / 2 + selectedGlasses.offsetX,
+              -glassesHeight / 2,
+              glassesWidth,
+              glassesHeight
+            );
+          }
 
-          ctx.strokeStyle = 'magenta';
-          ctx.lineWidth = 6;
-          ctx.strokeRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
-
-          // Diagonal magenta cross
-          ctx.beginPath();
-          ctx.moveTo(-glassesWidth / 2, -glassesHeight / 2);
-          ctx.lineTo(glassesWidth / 2, glassesHeight / 2);
-          ctx.moveTo(glassesWidth / 2, -glassesHeight / 2);
-          ctx.lineTo(-glassesWidth / 2, glassesHeight / 2);
-          ctx.stroke();
-
-          // Label
-          ctx.fillStyle = 'black';
-          ctx.font = 'bold 18px monospace';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('GLASSES BOX', 0, 0);
           ctx.restore();
 
-          // Reset baseline
-          ctx.textBaseline = 'alphabetic';
-          ctx.textAlign = 'left';
-
-          // Glasses PNG drawing TEMPORARILY DISABLED for debugging
-
-          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: true }));
+          setDebug((p) => ({ 
+            ...p, 
+            faceDetected: true, 
+            landmarksFound: true, 
+            drawingActive: true 
+          }));
         } else {
-          setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: false, drawingActive: false }));
+          setDebug((p) => ({ 
+            ...p, 
+            faceDetected: false, 
+            landmarksFound: false, 
+            drawingActive: false 
+          }));
         }
-      } else {
-        setDebug((p) => ({ ...p, faceDetected: false, landmarksFound: false, drawingActive: false }));
+      } catch (err) {
+        console.error('❌ Detection error:', err);
       }
-    } catch (err) {
-      console.error('❌ Detection error:', err);
     }
 
     animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
   };
 
+  // Start detection loop when streaming
   useEffect(() => {
-    if (isStreaming && isModelLoaded) {
+    if (isStreaming && isModelLoaded && faceLandmarker) {
       isDrawingRef.current = true;
       detectFaceAndOverlay();
     }
     return () => {
       isDrawingRef.current = false;
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStreaming, isModelLoaded, selectedGlasses]);
+  }, [isStreaming, isModelLoaded, faceLandmarker, selectedGlasses]);
 
+  // Cleanup on unmount
   useEffect(() => () => stopWebcam(), []);
 
+  // Capture screenshot
   const captureScreenshot = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const overlay = canvasRef.current;
-    const out = document.createElement('canvas');
-    out.width = video.clientWidth;
-    out.height = video.clientHeight;
-    const ctx = out.getContext('2d');
-    if (!ctx) return;
-    // Draw mirrored video
-    ctx.save();
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, -out.width, 0, out.width, out.height);
-    ctx.restore();
-    // Draw overlay on top
-    ctx.drawImage(overlay, 0, 0, out.width, out.height);
-    const link = document.createElement('a');
-    link.download = `fitlens-tryon-${Date.now()}.png`;
-    link.href = out.toDataURL('image/png');
-    link.click();
+    if (canvasRef.current) {
+      const link = document.createElement('a');
+      link.download = `fitlens-tryon-${Date.now()}.png`;
+      link.href = canvasRef.current.toDataURL('image/png');
+      link.click();
+    }
   };
 
   const StatusDot = ({ ok, label }: { ok: boolean; label: string }) => (
@@ -376,23 +359,21 @@ export default function ARTryOn() {
               <div className="relative aspect-video bg-secondary rounded-xl overflow-hidden">
                 <video
                   ref={videoRef}
-                  className="absolute inset-0 w-full h-full"
-                  style={{ transform: 'scaleX(-1)', zIndex: 1 }}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ display: 'none' }}
                   playsInline
                   muted
                 />
                 <canvas
                   ref={canvasRef}
-                  className="absolute inset-0 w-full h-full"
+                  className="absolute inset-0 w-full h-full object-cover"
                   style={{
                     display: isStreaming ? 'block' : 'none',
-                    zIndex: 10,
-                    pointerEvents: 'none',
                   }}
                 />
 
                 {!isStreaming && (
-                  <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 20 }}>
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
                       <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                       <p className="text-muted-foreground mb-4">Camera not active</p>
