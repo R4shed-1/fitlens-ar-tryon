@@ -1,129 +1,285 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Camera, RotateCcw, Share2, ShoppingCart, ChevronLeft, ChevronRight, Download } from "lucide-react";
-import { products } from "@/lib/products";
+import { useEffect, useRef, useState } from 'react';
+import * as faceapi from 'face-api.js';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Camera, Upload, Loader2, RefreshCw } from 'lucide-react';
 
-const ARTryOn = () => {
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const [cameraActive, setCameraActive] = useState(false);
-  const selected = products[selectedIdx];
+interface GlassesOverlay {
+  id: string;
+  name: string;
+  image: string;
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+}
+
+const glassesOptions: GlassesOverlay[] = [
+  { id: 'aviator', name: 'Aviator', image: '/glasses/aviator.png', offsetX: 0, offsetY: -20, scale: 2.4 },
+  { id: 'wayfarer', name: 'Wayfarer', image: '/glasses/wayfarer.png', offsetX: 0, offsetY: -15, scale: 2.3 },
+  { id: 'round', name: 'Round', image: '/glasses/round.png', offsetX: 0, offsetY: -18, scale: 2.2 },
+  { id: 'cat-eye', name: 'Cat Eye', image: '/glasses/cat-eye.png', offsetX: 0, offsetY: -20, scale: 2.3 },
+];
+
+export default function ARTryOn() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [selectedGlasses, setSelectedGlasses] = useState<GlassesOverlay>(glassesOptions[0]);
+  const [error, setError] = useState<string | null>(null);
+  const animationFrameRef = useRef<number>();
+  const glassesImageRef = useRef<HTMLImageElement>();
+
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        ]);
+        setIsModelLoaded(true);
+      } catch (err) {
+        setError('Failed to load face detection models');
+        console.error('Model loading error:', err);
+      }
+    };
+    loadModels();
+  }, []);
+
+  const startWebcam = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setIsStreaming(true);
+        setError(null);
+      }
+    } catch (err) {
+      setError('Camera access denied. Please enable camera permissions.');
+      console.error('Webcam error:', err);
+    }
+  };
+
+  const stopWebcam = () => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
+      setIsStreaming(false);
+    }
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+  };
+
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = selectedGlasses.image;
+    img.onload = () => { glassesImageRef.current = img; };
+    img.onerror = () => console.error('Failed to load glasses image');
+  }, [selectedGlasses]);
+
+  const detectFaceAndOverlay = async () => {
+    if (!videoRef.current || !canvasRef.current || !isModelLoaded) {
+      animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
+      return;
+    }
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || video.videoWidth === 0) {
+      animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Mirror the video horizontally for natural selfie view
+    ctx.save();
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    try {
+      const detections = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks();
+
+      if (detections && glassesImageRef.current) {
+        const landmarks = detections.landmarks;
+        const leftEye = landmarks.getLeftEye();
+        const rightEye = landmarks.getRightEye();
+
+        const avg = (pts: { x: number; y: number }[]) => ({
+          x: pts.reduce((a, p) => a + p.x, 0) / pts.length,
+          y: pts.reduce((a, p) => a + p.y, 0) / pts.length,
+        });
+        const l = avg(leftEye);
+        const r = avg(rightEye);
+
+        const eyeDistance = Math.hypot(r.x - l.x, r.y - l.y);
+        const angle = Math.atan2(r.y - l.y, r.x - l.x);
+
+        const glassesWidth = eyeDistance * selectedGlasses.scale;
+        const glassesHeight = (glassesImageRef.current.height / glassesImageRef.current.width) * glassesWidth;
+        const centerX = (l.x + r.x) / 2;
+        const centerY = (l.y + r.y) / 2;
+
+        // Mirror coordinates because canvas is mirrored
+        const mirroredX = canvas.width - centerX;
+
+        ctx.save();
+        ctx.translate(mirroredX, centerY + selectedGlasses.offsetY);
+        ctx.rotate(-angle);
+        ctx.drawImage(
+          glassesImageRef.current,
+          -glassesWidth / 2 + selectedGlasses.offsetX,
+          -glassesHeight / 2,
+          glassesWidth,
+          glassesHeight,
+        );
+        ctx.restore();
+      }
+    } catch (err) {
+      console.error('Detection error:', err);
+    }
+
+    animationFrameRef.current = requestAnimationFrame(detectFaceAndOverlay);
+  };
+
+  useEffect(() => {
+    if (isStreaming && isModelLoaded) detectFaceAndOverlay();
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStreaming, isModelLoaded, selectedGlasses]);
+
+  useEffect(() => () => stopWebcam(), []);
+
+  const captureScreenshot = () => {
+    if (canvasRef.current) {
+      const link = document.createElement('a');
+      link.download = `fitlens-tryon-${Date.now()}.png`;
+      link.href = canvasRef.current.toDataURL('image/png');
+      link.click();
+    }
+  };
 
   return (
-    <div className="min-h-screen pt-20 pb-16">
-      <div className="container mx-auto px-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-          <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-2">
-            <span className="gradient-text italic">AR</span> Virtual Try-On
+    <div className="min-h-screen pt-24 pb-16 bg-background">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <div className="text-center mb-10">
+          <h1 className="font-display text-4xl sm:text-5xl font-bold text-foreground mb-3">
+            <span className="gradient-text">FitLens</span> AR Try-On
           </h1>
-          <p className="text-muted-foreground">Select a product and see how it looks on you in real time.</p>
-        </motion.div>
+          <p className="text-muted-foreground">Try on glasses virtually using your camera</p>
+        </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Camera view */}
+        {error && (
+          <Card className="p-4 mb-6 border-destructive/30 bg-destructive/5">
+            <p className="text-destructive text-center text-sm">{error}</p>
+          </Card>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="relative aspect-[4/3] rounded-2xl overflow-hidden glass-card"
-            >
-              {cameraActive ? (
-                <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 to-card flex items-center justify-center">
-                  <div className="relative w-full h-full">
-                    {/* Face outline */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-48 h-64 rounded-[50%] border-2 border-primary/30 border-dashed" />
-                    </div>
-                    {/* Overlay glasses */}
-                    <div className="absolute inset-0 flex items-center justify-center" style={{ paddingBottom: "15%" }}>
-                      <img src={selected.image} alt={selected.name} className="w-40 h-auto object-contain opacity-80 drop-shadow-lg" />
-                    </div>
-                    {/* Status */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1.5 border border-primary/20">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                      AR Active — {selected.name}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                  <div className="h-20 w-20 rounded-full gradient-bg flex items-center justify-center">
-                    <Camera className="h-10 w-10 text-primary" />
-                  </div>
-                  <p className="text-muted-foreground text-sm">Enable camera to start AR try-on</p>
-                  <button
-                    onClick={() => setCameraActive(true)}
-                    className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-display font-semibold hover:bg-primary/90 transition-colors glow-warm"
-                  >
-                    Start Camera
-                  </button>
-                </div>
-              )}
-            </motion.div>
+            <Card className="p-6 glass-card">
+              <div className="relative aspect-video bg-secondary rounded-xl overflow-hidden">
+                <video
+                  ref={videoRef}
+                  className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+                  playsInline
+                  muted
+                />
+                <canvas
+                  ref={canvasRef}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ display: isStreaming ? 'block' : 'none' }}
+                />
 
-            {/* Controls */}
-            {cameraActive && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center gap-4 mt-4">
-                <button onClick={() => setCameraActive(false)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors">
-                  <RotateCcw className="h-4 w-4" /> Reset
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors">
-                  <Download className="h-4 w-4" /> Save Photo
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors">
-                  <Share2 className="h-4 w-4" /> Share
-                </button>
-              </motion.div>
-            )}
+                {!isStreaming && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-4">Camera not active</p>
+                      <Button onClick={startWebcam} disabled={!isModelLoaded}>
+                        {!isModelLoaded ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Models...</>
+                        ) : (
+                          <><Camera className="mr-2 h-4 w-4" /> Start Camera</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-3 mt-4">
+                <Button
+                  onClick={isStreaming ? stopWebcam : startWebcam}
+                  disabled={!isModelLoaded}
+                  variant={isStreaming ? 'destructive' : 'default'}
+                  className="flex-1 min-w-[140px]"
+                >
+                  {isStreaming ? 'Stop Camera' : 'Start Camera'}
+                </Button>
+                <Button onClick={captureScreenshot} disabled={!isStreaming} variant="outline" className="flex-1 min-w-[140px]">
+                  <Upload className="mr-2 h-4 w-4" /> Capture Photo
+                </Button>
+                <Button onClick={() => window.location.reload()} variant="outline" size="icon">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
           </div>
 
-          {/* Product selector */}
-          <div className="space-y-4">
-            <h3 className="font-display font-semibold text-foreground">Select Eyewear</h3>
-            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-              {products.map((p, i) => (
-                <button
-                  key={p.id}
-                  onClick={() => setSelectedIdx(i)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
-                    i === selectedIdx
-                      ? "glass-card border-primary/40 glow-warm"
-                      : "glass-card hover:border-primary/20"
-                  }`}
-                >
-                  <div className="h-14 w-14 rounded-lg bg-secondary/50 flex items-center justify-center flex-shrink-0">
-                    <img src={p.image} alt={p.name} className="h-10 w-10 object-contain" />
-                  </div>
-                  <div className="text-left flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.category} — AED {p.price}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
+          <div className="lg:col-span-1">
+            <Card className="p-6 glass-card">
+              <h2 className="font-display text-xl font-semibold mb-4 text-foreground">Select Glasses</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {glassesOptions.map((glasses) => (
+                  <button
+                    key={glasses.id}
+                    onClick={() => setSelectedGlasses(glasses)}
+                    className={`p-3 border-2 rounded-xl transition-all hover:scale-[1.02] ${
+                      selectedGlasses.id === glasses.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/40'
+                    }`}
+                  >
+                    <div className="aspect-video bg-secondary/50 rounded mb-2 flex items-center justify-center">
+                      <img
+                        src={glasses.image}
+                        alt={glasses.name}
+                        loading="lazy"
+                        className="max-w-full max-h-full object-contain p-1"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </div>
+                    <p className="text-sm font-medium text-center text-foreground">{glasses.name}</p>
+                  </button>
+                ))}
+              </div>
 
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setSelectedIdx((i) => Math.max(0, i - 1))}
-                className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80"
-              >
-                <ChevronLeft className="h-4 w-4" /> Prev
-              </button>
-              <button
-                onClick={() => setSelectedIdx((i) => Math.min(products.length - 1, i + 1))}
-                className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80"
-              >
-                Next <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-
-            <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-display font-semibold hover:bg-primary/90 transition-colors">
-              <ShoppingCart className="h-5 w-5" /> Add {selected.name} to Cart
-            </button>
+              <div className="mt-6 p-4 bg-primary/5 border border-primary/15 rounded-xl">
+                <h3 className="font-display font-semibold text-sm mb-2 text-foreground">How to use</h3>
+                <ol className="text-xs text-muted-foreground space-y-1">
+                  <li>1. Click "Start Camera" to begin</li>
+                  <li>2. Position your face in the frame</li>
+                  <li>3. Select different glasses to try on</li>
+                  <li>4. Capture photos you like!</li>
+                </ol>
+              </div>
+            </Card>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default ARTryOn;
+}
