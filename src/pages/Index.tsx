@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Eye, Sparkles, Share2, ShieldCheck, Zap, Smartphone } from "lucide-react";
+import { ArrowRight, Eye, Sparkles, Share2, ShieldCheck, Zap, Smartphone, Quote, Star } from "lucide-react";
 import heroImage from "@/assets/hero-glasses.png";
 import ProductCard from "@/components/ProductCard";
 import { products } from "@/lib/products";
@@ -15,6 +15,19 @@ const steps = [
   { icon: Eye, title: "Select Product", desc: "Choose any AR-ready eyewear to try" },
   { icon: Sparkles, title: "See the Magic", desc: "AI overlays glasses on your face in real-time" },
   { icon: Share2, title: "Share & Buy", desc: "Share with friends or add to cart instantly" },
+];
+
+const testimonials = [
+  { name: "Layla A.", city: "Dubai", text: "The 3D try-on feels exactly like the boutique. I bought my Maison Gold without ever leaving home.", rating: 5 },
+  { name: "Omar R.", city: "Abu Dhabi", text: "Frames sit perfectly on my face in the preview — no more guessing if a style suits me. Brilliant.", rating: 5 },
+  { name: "Fatima K.", city: "Sharjah", text: "Elegant, fast, and the delivery was next-day. FitLens AR is now my go-to for eyewear.", rating: 5 },
+];
+
+const stats = [
+  { value: "120K+", label: "Virtual fittings" },
+  { value: "4.9★", label: "Customer rating" },
+  { value: "48h", label: "UAE delivery" },
+  { value: "30-day", label: "Easy returns" },
 ];
 
 const Index = () => (
