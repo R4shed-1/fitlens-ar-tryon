@@ -351,7 +351,7 @@ export default function ARTryOn() {
               <div className="relative aspect-video bg-secondary rounded-xl overflow-hidden">
                 <video
                   ref={videoRef}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full"
                   style={{ transform: 'scaleX(-1)', zIndex: 1 }}
                   playsInline
                   muted
