@@ -91,6 +91,27 @@ const Index = () => (
       </div>
     </section>
 
+    {/* Stats strip */}
+    <section className="py-10 border-y border-warm-border/50 bg-gradient-to-r from-secondary/40 via-card to-secondary/40">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stats.map((s, i) => (
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+              className="text-center"
+            >
+              <p className="font-display text-3xl sm:text-4xl font-bold gradient-text">{s.value}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground tracking-wider uppercase mt-1">{s.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+
     {/* How it works */}
     <section className="py-24 relative">
       <div className="container mx-auto px-4">
