@@ -243,9 +243,13 @@ export default function ARTryOn3D() {
       threeCanvasRef.current.height = video.videoHeight;
       
       if (rendererRef.current && cameraRef.current) {
-        rendererRef.current.setSize(canvas.width, canvas.height);
-        cameraRef.current.aspect = canvas.width / canvas.height;
-        cameraRef.current.updateProjectionMatrix();
+        rendererRef.current.setSize(canvas.width, canvas.height, false);
+        const cam = cameraRef.current;
+        cam.left = 0;
+        cam.right = canvas.width;
+        cam.top = 0;
+        cam.bottom = canvas.height;
+        cam.updateProjectionMatrix();
       }
     }
 
@@ -313,25 +317,24 @@ export default function ARTryOn3D() {
         const angle = Math.atan2(dy, dx);
         const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
-        // Position 3D glasses
+        // Position 3D glasses (pixel-space ortho camera → use raw px coords)
         if (glassesModelRef.current && cameraRef.current && rendererRef.current) {
-          // Normalize to 3D space
-          const normalizedX = (centerX / canvas.width) * 2 - 1;
-          const normalizedY = -(centerY / canvas.height) * 2 + 1;
-          
-          glassesModelRef.current.position.x = normalizedX * 1.2;
-          glassesModelRef.current.position.y = normalizedY * 1.2;
-          glassesModelRef.current.position.z = 0;
-          
-          // Rotation - face forward + tilt with face
-          glassesModelRef.current.rotation.y = 0;
-          glassesModelRef.current.rotation.z = -angle;
-          
-          // Scale based on eye distance
-          const scale = (eyeDistance / canvas.width) * 2.5;
-          glassesModelRef.current.scale.set(scale, scale, scale);
-          
-          // Render
+          const cfg = selectedRef.current;
+          const g = glassesModelRef.current;
+
+          g.position.x = centerX;
+          g.position.y = centerY + cfg.yOffset;
+          g.position.z = 0;
+
+          // Face camera + tilt with head
+          g.rotation.x = 0;
+          g.rotation.y = cfg.rotY;
+          g.rotation.z = -angle;
+
+          // Scale: model is normalized to 1 unit wide → multiply by eye-dist px
+          const s = eyeDistance * cfg.scaleFactor * 8; // 8 ≈ face-width / eye-dist
+          g.scale.set(s, s, s);
+
           rendererRef.current.render(sceneRef.current!, cameraRef.current);
         }
 
