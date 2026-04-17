@@ -117,6 +117,8 @@ export default function ARTryOn() {
       cancelAnimationFrame(animationFrameRef.current);
     }
     lastVideoTimeRef.current = -1;
+    smoothedLeftRef.current = { x: 0, y: 0 };
+    smoothedRightRef.current = { x: 0, y: 0 };
     setDebug({ imageLoaded: debug.imageLoaded, faceDetected: false, landmarksFound: false, drawingActive: false });
   };
 
