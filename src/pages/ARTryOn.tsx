@@ -38,6 +38,9 @@ export default function ARTryOn() {
   const glassesImageRef = useRef<HTMLImageElement | null>(null);
   const isDrawingRef = useRef(false);
   const lastVideoTimeRef = useRef(-1);
+  const smoothedLeftRef = useRef({ x: 0, y: 0 });
+  const smoothedRightRef = useRef({ x: 0, y: 0 });
+  const smoothingFactor = 0.7; // Higher = smoother but more lag, lower = more responsive but jittery
 
   // Load MediaPipe Face Landmarker
   useEffect(() => {
@@ -114,6 +117,8 @@ export default function ARTryOn() {
       cancelAnimationFrame(animationFrameRef.current);
     }
     lastVideoTimeRef.current = -1;
+    smoothedLeftRef.current = { x: 0, y: 0 };
+    smoothedRightRef.current = { x: 0, y: 0 };
     setDebug({ imageLoaded: debug.imageLoaded, faceDetected: false, landmarksFound: false, drawingActive: false });
   };
 
@@ -206,13 +211,30 @@ export default function ARTryOn() {
           const mirroredLeftX = canvas.width - leftEyeX;
           const mirroredRightX = canvas.width - rightEyeX;
 
+          // Smooth the coordinates to reduce jitter
+          // Initialize on first detection to avoid lerp from (0,0)
+          if (smoothedLeftRef.current.x === 0 && smoothedLeftRef.current.y === 0) {
+            smoothedLeftRef.current = { x: mirroredLeftX, y: leftEyeY };
+            smoothedRightRef.current = { x: mirroredRightX, y: rightEyeY };
+          } else {
+            smoothedLeftRef.current.x = smoothedLeftRef.current.x * smoothingFactor + mirroredLeftX * (1 - smoothingFactor);
+            smoothedLeftRef.current.y = smoothedLeftRef.current.y * smoothingFactor + leftEyeY * (1 - smoothingFactor);
+            smoothedRightRef.current.x = smoothedRightRef.current.x * smoothingFactor + mirroredRightX * (1 - smoothingFactor);
+            smoothedRightRef.current.y = smoothedRightRef.current.y * smoothingFactor + rightEyeY * (1 - smoothingFactor);
+          }
+
+          const finalLeftX = smoothedLeftRef.current.x;
+          const finalLeftY = smoothedLeftRef.current.y;
+          const finalRightX = smoothedRightRef.current.x;
+          const finalRightY = smoothedRightRef.current.y;
+
           // Calculate center point
-          const centerX = (mirroredLeftX + mirroredRightX) / 2;
-          const centerY = (leftEyeY + rightEyeY) / 2;
+          const centerX = (finalLeftX + finalRightX) / 2;
+          const centerY = (finalLeftY + finalRightY) / 2;
 
           // Calculate angle and distance
-          const dx = mirroredRightX - mirroredLeftX;
-          const dy = rightEyeY - leftEyeY;
+          const dx = finalRightX - finalLeftX;
+          const dy = finalRightY - finalLeftY;
           const angle = Math.atan2(dy, dx);
           const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
@@ -224,13 +246,13 @@ export default function ARTryOn() {
           // Left eye - RED
           ctx.fillStyle = 'red';
           ctx.beginPath();
-          ctx.arc(mirroredLeftX, leftEyeY, 8, 0, Math.PI * 2);
+          ctx.arc(finalLeftX, finalLeftY, 8, 0, Math.PI * 2);
           ctx.fill();
 
           // Right eye - RED
           ctx.fillStyle = 'red';
           ctx.beginPath();
-          ctx.arc(mirroredRightX, rightEyeY, 8, 0, Math.PI * 2);
+          ctx.arc(finalRightX, finalRightY, 8, 0, Math.PI * 2);
           ctx.fill();
 
           // Center point - GREEN
