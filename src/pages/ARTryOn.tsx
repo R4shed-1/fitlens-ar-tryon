@@ -362,7 +362,7 @@ export default function ARTryOn() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Card className="p-6 glass-card">
-              <div className="relative aspect-video bg-secondary rounded-xl overflow-hidden">
+              <div className="relative aspect-video bg-secondary rounded-xl overflow-visible">
                 <video
                   ref={videoRef}
                   className="absolute inset-0 w-full h-full object-cover"
