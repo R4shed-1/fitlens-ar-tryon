@@ -146,7 +146,7 @@ export default function ARTryOn3D() {
         const model = gltf.scene;
         
         // Scale model appropriately
-        model.scale.set(0.5, 0.5, 0.5);
+        model.scale.set(0.05, 0.05, 0.05);
         model.position.set(0, 0, 0);
         
         glassesModelRef.current = model;
@@ -306,9 +306,10 @@ export default function ARTryOn3D() {
             
             // Rotate glasses to match face angle
             glassesModelRef.current.rotation.z = -angle;
+            glassesModelRef.current.rotation.y = Math.PI / 2;
             
             // Scale based on eye distance - MUCH SMALLER
-            const scale = (eyeDistance / canvas.width) * 1.5;
+            const scale = (eyeDistance / canvas.width) * 0.3;
             glassesModelRef.current.scale.set(scale, scale, scale);
             
             // Render 3D scene
