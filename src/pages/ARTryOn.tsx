@@ -54,10 +54,13 @@ export default function ARTryOn3D() {
   
   // Three.js references
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const glassesModelRef = useRef<THREE.Group | null>(null);
   const loaderRef = useRef<GLTFLoader>(new GLTFLoader());
+  const selectedRef = useRef<GlassesModel>(selectedGlasses);
+
+  useEffect(() => { selectedRef.current = selectedGlasses; }, [selectedGlasses]);
 
   // Load MediaPipe
   useEffect(() => {
