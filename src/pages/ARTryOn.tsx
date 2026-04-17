@@ -133,12 +133,10 @@ export default function ARTryOn() {
       faceapi.matchDimensions(canvas, { width: displayWidth, height: displayHeight });
     }
 
-    // Transparent overlay — clear instead of drawing video
+    // Clear the full canvas each frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    console.log('DRAW LOOP ACTIVE');
-
-    // PERMANENT CANVAS-VISIBILITY MARKER
+    // a) CANVAS OK marker
     ctx.fillStyle = 'red';
     ctx.fillRect(40, 40, 120, 60);
     ctx.fillStyle = 'white';
@@ -147,6 +145,14 @@ export default function ARTryOn() {
     ctx.textBaseline = 'middle';
     ctx.fillText('CANVAS OK', 50, 70);
     ctx.textBaseline = 'alphabetic';
+
+    // b) Fixed cyan/pink test markers
+    ctx.fillStyle = 'cyan';
+    ctx.beginPath();
+    ctx.arc(220, 220, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'magenta';
+    ctx.fillRect(180, 260, 180, 60);
 
     try {
       const detection = await faceapi
@@ -173,7 +179,7 @@ export default function ARTryOn() {
             y: rightEyePoints.reduce((s, p) => s + p.y, 0) / rightEyePoints.length,
           };
 
-          // Mirror X because the video is CSS-mirrored via scaleX(-1)
+          // Mirror X because video is CSS-mirrored via scaleX(-1)
           const leftEye = { x: displayWidth - leftEyeCenter.x, y: leftEyeCenter.y };
           const rightEye = { x: displayWidth - rightEyeCenter.x, y: rightEyeCenter.y };
 
@@ -187,44 +193,14 @@ export default function ARTryOn() {
           const glassesWidth = eyeDistance * selectedGlasses.scale;
           const glassesHeight = glassesWidth * 0.35;
 
-          console.log('leftEye', leftEye, 'rightEye', rightEye, 'centerPoint', centerPoint, 'glassesWidth', glassesWidth, 'glassesHeight', glassesHeight);
+          console.log('DRAW MARKERS NOW');
+          console.log('leftEye', leftEye);
+          console.log('rightEye', rightEye);
+          console.log('centerPoint', centerPoint);
+          console.log('glassesWidth', glassesWidth);
+          console.log('glassesHeight', glassesHeight);
 
-          ctx.lineWidth = 4;
-
-          // Red dot — left eye
-          ctx.fillStyle = 'red';
-          ctx.beginPath();
-          ctx.arc(leftEye.x, leftEye.y, 12, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = 'white';
-          ctx.stroke();
-
-          // Blue dot — right eye
-          ctx.fillStyle = 'blue';
-          ctx.beginPath();
-          ctx.arc(rightEye.x, rightEye.y, 12, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = 'white';
-          ctx.stroke();
-
-          // Green center dot
-          ctx.fillStyle = 'lime';
-          ctx.beginPath();
-          ctx.arc(centerPoint.x, centerPoint.y, 14, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = 'black';
-          ctx.stroke();
-
-          // Yellow glasses rectangle (debug)
-          ctx.save();
-          ctx.translate(centerPoint.x, centerPoint.y);
-          ctx.rotate(angle);
-          ctx.strokeStyle = 'yellow';
-          ctx.lineWidth = 4;
-          ctx.strokeRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
-          ctx.restore();
-
-          // Debug values
+          // c) Debug text
           const lines = [
             `video.videoWidth/Height: ${video.videoWidth} / ${video.videoHeight}`,
             `video.clientWidth/Height: ${video.clientWidth} / ${video.clientHeight}`,
@@ -244,20 +220,69 @@ export default function ARTryOn() {
             ctx.fillText(line, 10, y);
           });
 
-          // Actual glasses PNG (after debug markers)
-          if (glassesImageRef.current && glassesImageRef.current.complete) {
-            ctx.save();
-            ctx.translate(centerPoint.x, centerPoint.y + selectedGlasses.offsetY);
-            ctx.rotate(angle);
-            ctx.drawImage(
-              glassesImageRef.current,
-              -glassesWidth / 2 + selectedGlasses.offsetX,
-              -glassesHeight / 2,
-              glassesWidth,
-              glassesHeight
-            );
-            ctx.restore();
-          }
+          // d) Tracked eye dots
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          // Left eye — RED with "L"
+          ctx.fillStyle = 'red';
+          ctx.beginPath();
+          ctx.arc(leftEye.x, leftEye.y, 24, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 22px monospace';
+          ctx.fillText('L', leftEye.x, leftEye.y);
+
+          // Right eye — BLUE with "R"
+          ctx.fillStyle = 'blue';
+          ctx.beginPath();
+          ctx.arc(rightEye.x, rightEye.y, 24, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'white';
+          ctx.fillText('R', rightEye.x, rightEye.y);
+
+          // e) Tracked center dot — LIME with "C"
+          ctx.fillStyle = 'lime';
+          ctx.beginPath();
+          ctx.arc(centerPoint.x, centerPoint.y, 28, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'black';
+          ctx.font = 'bold 24px monospace';
+          ctx.fillText('C', centerPoint.x, centerPoint.y);
+
+          // f) Tracked glasses box — filled yellow 55%, magenta border + cross + label
+          ctx.save();
+          ctx.translate(centerPoint.x, centerPoint.y);
+          ctx.rotate(angle);
+
+          ctx.fillStyle = 'rgba(255, 255, 0, 0.55)';
+          ctx.fillRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
+
+          ctx.strokeStyle = 'magenta';
+          ctx.lineWidth = 6;
+          ctx.strokeRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
+
+          // Diagonal magenta cross
+          ctx.beginPath();
+          ctx.moveTo(-glassesWidth / 2, -glassesHeight / 2);
+          ctx.lineTo(glassesWidth / 2, glassesHeight / 2);
+          ctx.moveTo(glassesWidth / 2, -glassesHeight / 2);
+          ctx.lineTo(-glassesWidth / 2, glassesHeight / 2);
+          ctx.stroke();
+
+          // Label
+          ctx.fillStyle = 'black';
+          ctx.font = 'bold 18px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('GLASSES BOX', 0, 0);
+          ctx.restore();
+
+          // Reset baseline
+          ctx.textBaseline = 'alphabetic';
+          ctx.textAlign = 'left';
+
+          // Glasses PNG drawing TEMPORARILY DISABLED for debugging
 
           setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: true }));
         } else {
