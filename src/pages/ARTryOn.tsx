@@ -191,34 +191,16 @@ export default function ARTryOn() {
         ctx.arc(centerPoint.x, centerPoint.y, 12, 0, Math.PI * 2);
         ctx.fill();
 
-        const eyeDistance = Math.hypot(mirroredRight.x - mirroredLeft.x, mirroredRight.y - mirroredLeft.y);
-        const angle = Math.atan2(mirroredRight.y - mirroredLeft.y, mirroredRight.x - mirroredLeft.x);
-        const glassesWidth = eyeDistance * 1.6;
-        const glassesHeight = glassesWidth * 0.35;
-
-        console.log('📏 DIMENSIONS:', {
-          eyeDistance,
-          glassesWidth,
-          glassesHeight,
-          angle: ((angle * 180) / Math.PI).toFixed(1) + '°',
-        });
-
-        // BRIGHT YELLOW BOX
-        ctx.save();
-        ctx.translate(centerPoint.x, centerPoint.y - 15);
-        ctx.rotate(angle);
-        ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
-        ctx.fillRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
+        // YELLOW BOX (fixed 200x80, diagnostic)
+        const width = 200;
+        const height = 80;
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.8)';
+        ctx.fillRect(centerPoint.x - width / 2, centerPoint.y - height / 2 - 15, width, height);
         ctx.strokeStyle = 'red';
         ctx.lineWidth = 5;
-        ctx.strokeRect(-glassesWidth / 2, -glassesHeight / 2, glassesWidth, glassesHeight);
-        ctx.fillStyle = 'black';
-        ctx.font = 'bold 20px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('GLASSES HERE', 0, 5);
-        ctx.restore();
+        ctx.strokeRect(centerPoint.x - width / 2, centerPoint.y - height / 2 - 15, width, height);
 
-        console.log('🎨 DREW OVERLAY AT:', { x: centerPoint.x, y: centerPoint.y - 15 });
+        console.log('DREW AT:', centerPoint.x, centerPoint.y);
 
         setDebug((p) => ({ ...p, faceDetected: true, landmarksFound: true, drawingActive: true }));
       } else {
