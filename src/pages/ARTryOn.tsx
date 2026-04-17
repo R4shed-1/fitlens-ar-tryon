@@ -97,20 +97,20 @@ export default function ARTryOn3D() {
     loadModel();
   }, []);
 
-  // Initialize Three.js
+  // Initialize Three.js with an OrthographicCamera in pixel space.
+  // x grows right, y grows DOWN (matches canvas pixel coords) so we can
+  // pass MediaPipe landmarks straight in.
   useEffect(() => {
     if (!threeCanvasRef.current) return;
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      threeCanvasRef.current.width / threeCanvasRef.current.height,
-      0.1,
-      1000
-    );
-    camera.position.z = 5;
+    const w = threeCanvasRef.current.width || 1280;
+    const h = threeCanvasRef.current.height || 720;
+    // left, right, top, bottom — top<bottom flips Y so y-down matches pixels
+    const camera = new THREE.OrthographicCamera(0, w, 0, h, -1000, 1000);
+    camera.position.z = 500;
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -118,30 +118,25 @@ export default function ARTryOn3D() {
       alpha: true,
       antialias: true,
     });
-    renderer.setSize(threeCanvasRef.current.width, threeCanvasRef.current.height);
+    renderer.setSize(w, h, false);
     renderer.setClearColor(0x000000, 0);
     rendererRef.current = renderer;
 
-    // Better lighting for realistic glasses
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-    scene.add(ambientLight);
-
-    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight1.position.set(1, 1, 1);
-    scene.add(directionalLight1);
-
-    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
-    directionalLight2.position.set(-1, 0, 1);
-    scene.add(directionalLight2);
-
-    console.log('✅ Three.js initialized');
+    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+    const d1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    d1.position.set(1, -1, 1);
+    scene.add(d1);
+    const d2 = new THREE.DirectionalLight(0xffffff, 0.4);
+    d2.position.set(-1, 0, 1);
+    scene.add(d2);
 
     return () => {
       renderer.dispose();
     };
   }, []);
 
-  // Load selected 3D model
+  // Load selected 3D model — auto-center geometry so the model's pivot is
+  // at the bridge of the glasses, then normalize size to width=1 unit.
   useEffect(() => {
     if (!sceneRef.current) return;
 
@@ -150,29 +145,34 @@ export default function ARTryOn3D() {
       glassesModelRef.current = null;
     }
 
-    console.log('🔄 Loading model:', selectedGlasses.name);
-    
     loaderRef.current.load(
       selectedGlasses.modelPath,
       (gltf) => {
-        const model = gltf.scene;
-        
-        // Initial tiny scale
-        model.scale.set(0.01, 0.01, 0.01);
-        model.position.set(0, 0, 0);
-        
-        // Rotate to face forward (models are often sideways)
-        model.rotation.y = Math.PI / 2;
-        
-        glassesModelRef.current = model;
-        sceneRef.current?.add(model);
-        
-        console.log('✅ Model loaded:', selectedGlasses.name);
+        const raw = gltf.scene;
+
+        // Compute bounding box and recenter geometry into a wrapper group
+        const box = new THREE.Box3().setFromObject(raw);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+
+        // Shift so origin = geometric center
+        raw.position.sub(center);
+        // Normalize so the widest axis = 1 unit; per-frame we multiply by
+        // eye distance so it always matches face width.
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const wrapper = new THREE.Group();
+        const inner = new THREE.Group();
+        inner.scale.setScalar(1 / maxDim);
+        inner.add(raw);
+        wrapper.add(inner);
+
+        glassesModelRef.current = wrapper;
+        sceneRef.current?.add(wrapper);
       },
       undefined,
-      (err) => {
-        console.error('❌ Model load error:', err);
-      }
+      (err) => console.error('GLTF load error:', err)
     );
   }, [selectedGlasses]);
 
