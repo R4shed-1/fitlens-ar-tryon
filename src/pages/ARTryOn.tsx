@@ -366,6 +366,7 @@ export default function ARTryOn() {
                     display: isStreaming ? 'block' : 'none',
                     zIndex: 10,
                     position: 'absolute',
+                    border: '10px solid lime',
                   }}
                 />
 
