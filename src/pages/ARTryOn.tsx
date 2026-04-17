@@ -14,10 +14,10 @@ interface GlassesOverlay {
 }
 
 const glassesOptions: GlassesOverlay[] = [
-  { id: 'aviator', name: 'Aviator', image: '/glasses/aviator.png', offsetX: 0, offsetY: -20, scale: 2.4 },
-  { id: 'wayfarer', name: 'Wayfarer', image: '/glasses/wayfarer.png', offsetX: 0, offsetY: -15, scale: 2.3 },
-  { id: 'round', name: 'Round', image: '/glasses/round.png', offsetX: 0, offsetY: -18, scale: 2.2 },
-  { id: 'cat-eye', name: 'Cat Eye', image: '/glasses/cat-eye.png', offsetX: 0, offsetY: -20, scale: 2.3 },
+  { id: 'aviator', name: 'Aviator', image: '/glasses/aviator.svg', offsetX: 0, offsetY: -15, scale: 1.9 },
+  { id: 'wayfarer', name: 'Wayfarer', image: '/glasses/wayfarer.svg', offsetX: 0, offsetY: -10, scale: 1.8 },
+  { id: 'round', name: 'Round', image: '/glasses/round.svg', offsetX: 0, offsetY: -12, scale: 1.7 },
+  { id: 'cat-eye', name: 'Cat Eye', image: '/glasses/cat-eye.svg', offsetX: 0, offsetY: -15, scale: 1.85 },
 ];
 
 export default function ARTryOn() {
