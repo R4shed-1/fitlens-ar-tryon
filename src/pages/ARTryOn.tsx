@@ -217,6 +217,9 @@ export default function ARTryOn() {
           ctx.fillStyle = 'black';
           ctx.fillText('GLASSES HERE', testCenterX, testCenterY - 140);
 
+          console.log('🎨 ABOUT TO DRAW OVERLAYS - safeLeft:', safeLeft, 'safeRight:', safeRight, 'centerPoint:', centerPoint);
+
+          console.log('🔴 DRAWING RED DOTS NOW');
           // RED DOTS on eyes - MASSIVE SIZE
           ctx.fillStyle = 'red';
           ctx.beginPath();
@@ -255,6 +258,7 @@ export default function ARTryOn() {
           const glassesHeight = glassesWidth * 0.35;
 
           // YELLOW BOX - MUCH MORE VISIBLE
+          console.log('🟡 DRAWING YELLOW BOX NOW');
           ctx.save();
           ctx.translate(centerPoint.x, centerPoint.y - 15);
           ctx.rotate(angle);
